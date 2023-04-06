@@ -4,16 +4,24 @@ const axios = require("axios");
 const instagramRoutes = express.Router();
 
 const ACCESS_TOKENS = [
-  "nice-try",
-  "nice-try",
-  "nice-try",
-  "nice-try",
-  "nice-try",
+  process.env.ACCESS_TOKEN_1,
+  process.env.ACCESS_TOKEN_2,
+  process.env.ACCESS_TOKEN_3,
+  process.env.ACCESS_TOKEN_4,
+  process.env.ACCESS_TOKEN_5,
+];
+
+const PAGE_IDS = [
+  process.env.PAGE_ID_1,
+  process.env.PAGE_ID_2,
+  process.env.PAGE_ID_3,
+  process.env.PAGE_ID_4,
+  process.env.PAGE_ID_5,
 ];
 
 const getAllStoriesByAccessToken = async (access_token, rating) => {
   const url =
-    "https://graph.facebook.com/me/conversations?platform=instagram&fields=messages{story,created_time},participants&access_token=" +
+    "https://graph.facebook.com/v16.0/me/conversations?platform=instagram&fields=messages{story,created_time},participants&access_token=" +
     access_token;
 
   return axios
