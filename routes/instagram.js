@@ -3,50 +3,93 @@ const axios = require("axios");
 
 const instagramRoutes = express.Router();
 
-const ACCESS_TOKEN = "nice-try";
+const ACCESS_TOKENS = [
+  "nice-try",
+  "nice-try",
+  "nice-try",
+  "nice-try",
+  "nice-try",
+];
 
-const getAllStories = async () => {
+const getAllStoriesByAccessToken = async (access_token, rating) => {
   const url =
-    "https://graph.facebook.com/me/conversations?platform=instagram&fields=messages{story},participants&access_token=" +
-    ACCESS_TOKEN;
+    "https://graph.facebook.com/me/conversations?platform=instagram&fields=messages{story,created_time},participants&access_token=" +
+    access_token;
 
-  return await axios.get(url).then((res) => {
-    const allStories = res.data.data.map((conversation) => ({
-      participants: conversation.participants.data.map(
-        (participant) => participant.username
-      ),
-      stories: conversation.messages.data.flatMap((message) =>
-        message.story && message.story.mention && message.story.mention.link
-          ? [message.story.mention.link]
-          : []
-      ),
-    }));
-
-    return allStories;
-  });
+  return axios
+    .get(url)
+    .then((res) =>
+      res.data.data.map((conversation) => ({
+        participants: conversation.participants.data.map(
+          (participant) => participant.username
+        ),
+        stories: conversation.messages.data.flatMap((message) =>
+          message.story && message.story.mention
+            ? [
+                {
+                  url: message.story.mention.link,
+                  timestamp: message.created_time,
+                  rating: rating,
+                },
+              ]
+            : []
+        ),
+      }))
+    )
+    .catch((error) => {
+      console.log(error.response.status, error.response.statusText, error.code);
+      console.log("error", rating);
+      return [];
+    });
 };
 
+const getAllStories = async () =>
+  Promise.all(
+    ACCESS_TOKENS.map((access_token, index) =>
+      getAllStoriesByAccessToken(access_token, index + 1)
+    )
+  )
+    .then((storiesByRating) => storiesByRating.flat())
+    .catch((error) => []);
+
 // returns a list of all stories available to us that haven't expired
-instagramRoutes.route("/instagram/all-stories").get(function (req, res) {
+instagramRoutes.route("/instagram/all-stories").get((req, res) => {
   getAllStories().then((stories) => {
-    res.send(stories);
+    allStories = stories
+      .flatMap((story) => story.stories)
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+      .reverse();
+    res.send(allStories);
   });
 });
 
 // returns a list of all stories available to us by user that haven't expired
-instagramRoutes.route("/instagram/stories/:username").get(function (req, res) {
+instagramRoutes.route("/instagram/:username/stories").get((req, res) => {
   const { username } = req.params;
 
   getAllStories().then((stories) => {
-    myStories = stories.flatMap((story) =>
-      story.participants.includes(username) ? story.stories : []
-    );
+    myStories = stories
+      .flatMap((story) =>
+        story.participants.includes(username) ? story.stories : []
+      )
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+      .reverse();
     res.send(myStories);
   });
 });
 
+// returns a list of restaurant recommendations for a given user
+instagramRoutes.route("/instagram/:username/restaurants").get((req, res) => {
+  res.send([]);
+});
+
+// returns a list of stats for a given user
+instagramRoutes.route("/instagram/:username/stats").get((req, res) => {
+  res.send({});
+});
+
 // logs every time we get a story mention
-instagramRoutes.route("/instagram/story-mention").post(function (req, res) {
+instagramRoutes.route("/instagram/story-mention").post((req, res) => {
   console.log(req.body);
 
   req.body.entry.forEach((entry) =>
@@ -69,8 +112,6 @@ instagramRoutes.route("/instagram/story-mention").post(function (req, res) {
 
 module.exports = instagramRoutes;
 
-// me/conversations?platform=instagram
-// message-id/attachments
-// me/conversations?fields=messages{story},name&platform=instagram
-// https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=17973121241180465&signature=AbyqawaR8ZoSGzUQ3M_Z74SOwEkkz29s6UkaHzLeoXThALGuyfDsxWlvQRnhjTP8I9kbcAK7kuS5x4nad7hnlIa5dY5KIV8hokyrgN4zhbgBwaZiahG4euB5FpveFL4ADYgjJjoeHY6hi70tVYyuYX32ouTvAPUrBmg4eQKySbthnqLoHsButoQEE7dJ19KgoHGhDBl9KPHgLQ6ygQbQiDCA-HgzWAc
-// https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=17973121241180465&signature=Abxh5maxOb4d6xk8pAMxbPcLHXFC8mDO2_zlMbg7oIZ9Xrdq6P3gu90R6-YuGr6Epd5yLLKFXYygbYAML_Un7bILOYvh-WMe_oRVEdKmFSHBHcXuU5Q_jISdOrjajFRPqT2dNjeWAzsw5gJvs7pvFZ5_oLkOeqczT3fpAIYmeo4xHROy9oqWL9wDhhPcIZUNcpcwk9IRD6jdgCPRHddA9CI5z_YVDvc
+// TODO: make server bulletproof to responses from graph api (for instance invalid access token)
+// TODO: filter out expired stories
+// TODO: handle access tokens properly
