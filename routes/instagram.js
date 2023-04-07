@@ -19,13 +19,12 @@ const PAGE_IDS = [
   process.env.PAGE_ID_5,
 ];
 
-const getAllStoriesByAccessToken = async (access_token, rating) => {
-  const url =
-    "https://graph.facebook.com/v16.0/me/conversations?platform=instagram&fields=messages{story,created_time},participants&access_token=" +
-    access_token;
-
-  return axios
-    .get(url)
+const getAllStoriesByAccessToken = async (access_token, rating) =>
+  axios
+    .get(
+      "https://graph.facebook.com/v16.0/me/conversations?platform=instagram&fields=messages{story,created_time},participants&access_token=" +
+        access_token
+    )
     .then((res) =>
       res.data.data.map((conversation) => ({
         participants: conversation.participants.data.map(
@@ -45,11 +44,17 @@ const getAllStoriesByAccessToken = async (access_token, rating) => {
       }))
     )
     .catch((error) => {
-      console.log(error.response.status, error.response.statusText, error.code);
-      console.log("error", rating);
+      console.log(`getAllStoriesByAccessToken rating=${rating} failed`);
+      if (error && error.response) {
+        console.log({
+          status: error.response.status,
+          statusText: error.response.statusText,
+          headers: error.response.headers,
+          config: error.response.config,
+        });
+      }
       return [];
     });
-};
 
 const getAllStories = async () =>
   Promise.all(
@@ -58,32 +63,43 @@ const getAllStories = async () =>
     )
   )
     .then((storiesByRating) => storiesByRating.flat())
-    .catch((error) => []);
+    .catch((error) => {
+      console.log("one or more getAllStoriesByAccessToken failed");
+      return [];
+    });
 
 // returns a list of all stories available to us that haven't expired
 instagramRoutes.route("/instagram/all-stories").get((req, res) => {
-  getAllStories().then((stories) => {
-    allStories = stories
-      .flatMap((story) => story.stories)
-      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-      .reverse();
-    res.send(allStories);
-  });
+  getAllStories()
+    .then((stories) => {
+      allStories = stories
+        .flatMap((story) => story.stories)
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+        .reverse();
+      res.send(allStories);
+    })
+    .catch((error) => {
+      console.log("instagram/all-stories failed");
+    });
 });
 
 // returns a list of all stories available to us by user that haven't expired
 instagramRoutes.route("/instagram/:username/stories").get((req, res) => {
   const { username } = req.params;
 
-  getAllStories().then((stories) => {
-    myStories = stories
-      .flatMap((story) =>
-        story.participants.includes(username) ? story.stories : []
-      )
-      .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-      .reverse();
-    res.send(myStories);
-  });
+  getAllStories()
+    .then((stories) => {
+      myStories = stories
+        .flatMap((story) =>
+          story.participants.includes(username) ? story.stories : []
+        )
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+        .reverse();
+      res.send(myStories);
+    })
+    .catch((error) => {
+      console.log(`instagram/${username}/stories failed`);
+    });
 });
 
 // returns a list of restaurant recommendations for a given user
@@ -120,6 +136,4 @@ instagramRoutes.route("/instagram/story-mention").post((req, res) => {
 
 module.exports = instagramRoutes;
 
-// TODO: make server bulletproof to responses from graph api (for instance invalid access token)
 // TODO: filter out expired stories
-// TODO: handle access tokens properly
