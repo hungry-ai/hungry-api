@@ -22,7 +22,7 @@ const PAGE_IDS = [
 const getAllStoriesByAccessToken = async (access_token, rating) =>
   axios
     .get(
-      "https://graph.facebook.com/v16.0/me/conversations?platform=instagram&fields=messages{story,created_time},participants&access_token=" +
+      "https://graph.facebook.com/v16.0/me/conversations?platform=instagram&fields=messages{story,created_time,from},participants&access_token=" +
         access_token
     )
     .then((res) =>
@@ -31,12 +31,16 @@ const getAllStoriesByAccessToken = async (access_token, rating) =>
           (participant) => participant.username
         ),
         stories: conversation.messages.data.flatMap((message) =>
-          message.story && message.story.mention
+          message.story &&
+          message.story.mention &&
+          message.from &&
+          message.from.username
             ? [
                 {
                   url: message.story.mention.link,
                   timestamp: message.created_time,
                   rating: rating,
+                  username: message.from.username,
                 },
               ]
             : []
@@ -136,4 +140,5 @@ instagramRoutes.route("/instagram/story-mention").post((req, res) => {
 
 module.exports = instagramRoutes;
 
-// TODO: filter out expired stories
+// TODO: why isn't balconycarspotting showing up?
+// TODO: figure out how to handle message requests
