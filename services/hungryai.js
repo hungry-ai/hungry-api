@@ -126,12 +126,15 @@ const getReviews = async (instagramUsername) => {
     });
 };
 
+const getRestaurantImages = async (restaurant) => {};
+
 const getRestaurants = async (instagramUsername, zip) => {
   console.log(`getRestaurants(${instagramUsername}, ${zip})`);
 
   return mongo
     .getUser(instagramUsername)
     .then((user) => recommender.getRecommendations(user, zip))
+    .then((restaurants) => restaurants.map(getRestaurantImages))
     .catch((error) => {
       console.log(
         `getRestaurants(${instagramUsername}, ${zip}) failed:\n${error}`

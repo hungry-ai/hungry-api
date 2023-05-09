@@ -1,5 +1,7 @@
 const mongo = require("./mongo");
+const google = require("./google");
 
+/*
 // TODO
 const addImageWeights = async (image) => {
   console.log(`recommender.addImageWeights(${image})`);
@@ -126,6 +128,16 @@ const getRecommendations = async (user, zip) => {
       throw error;
     });
 };
+
+module.exports = {
+  addReview: addReview,
+  getRecommendations: getRecommendations,
+};
+*/
+
+const addReview = () => {};
+
+const getRecommendations = () => {};
 
 module.exports = {
   addReview: addReview,
