@@ -1,9 +1,12 @@
-const GoogleImageTags = require("../models/GoogleImageTags");
+const fetch = require('node-fetch');
 const vision = require("@google-cloud/vision");
+const GoogleImageTags = require("../models/GoogleImageTags");
 const { GoogleAuth } = require("google-auth-library");
+const apiKey = '';
+
 
 const getImageTags = async (image) => {
-  console.log(`google.getImageTags(${image})`);
+  // console.log(`google.getImageTags(${image})`);
   // return GoogleImageTags.findOne({image : image})
   //   .then((googleImageTags) =>
   //     googleImageTags
@@ -45,19 +48,54 @@ const getGoogleTags = async (url) => {
   }
 };
 
-// TODO
+
 const getRestaurants = async (zip) => {
-  console.log(`getRestaurants(${zip})`);
+  console.log(`google.getRestaurants(${zip})`);
 
-  // call google places
+  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=restaurants+in+${zip}&key=${apiKey}`;
+
+  try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.results) {
+          console.log(data.results);
+          return data.results;
+      } else {
+          console.log('No restaurants found');
+          return [];
+      }
+  } catch (error) {
+      console.error(`Error: ${error}`);
+      return [];
+  }
 };
 
-// TODO
-const getRestaurantImages = async (restaurant) => {
-  console.log(`getRestaurantImages(${restaurant})`);
+const getRestaurantImages = async (place_id) => {
+  console.log(`getRestaurantImages(${place_id})`);
 
-  // call google places
+  const fields = 'photos';
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=${fields}&key=${apiKey}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.result.photos) {
+      const photoRefs = data.result.photos.map(photo => photo.photo_reference);
+      const photoUrls = photoRefs.map(ref => `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${ref}&key=${apiKey}`);
+      console.log(photoUrls);
+      return photoUrls;
+    } else {
+      console.log('No photos found');
+      return [];
+    }
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    return [];
+  }
 };
+
 
 module.exports = {
   getImageTags: getImageTags,

@@ -55,6 +55,10 @@ const testCody = async () => {
 testAlex = async () => {
   const tags = google.getGoogleTags('https://media.istockphoto.com/id/1286622470/photo/healthy-fresh-sushi-roll-set-with-ginger-close-up-japanese-food.jpg?b=1&s=170667a&w=0&k=20&c=ypBK2FsuGrgVTgKPb29eleA6YJEXb5d0PG6LZb0M0ZU=');
   console.log(tags);
+  const restaurants = google.getRestaurants(10017);
+  console.log(restaurants);
+  const photo_urls = google.getRestaurantImages('ChIJlbnq-a1ZwokRltQxGetHNVw');
+  console.log(photo_urls);
 };
 
 const main = async () => {
