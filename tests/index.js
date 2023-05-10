@@ -1,7 +1,7 @@
 const hungryai = require("../services/hungryai");
 const google = require("../services/google");
 const instagram = require("../services/instagram");
-const mongo = require("../services/mongo");
+//const mongo = require("../services/mongo");
 const recommender = require("../services/recommender");
 
 const testCody = async () => {
@@ -52,8 +52,14 @@ const testCody = async () => {
     .then(console.log);
 };
 
+testAlex = async () => {
+  const tags = google.getGoogleTags('https://media.istockphoto.com/id/1286622470/photo/healthy-fresh-sushi-roll-set-with-ginger-close-up-japanese-food.jpg?b=1&s=170667a&w=0&k=20&c=ypBK2FsuGrgVTgKPb29eleA6YJEXb5d0PG6LZb0M0ZU=');
+  console.log(tags);
+};
+
 const main = async () => {
-  testCody();
+  //testCody();
+  testAlex();
 };
 
 module.exports = { main: main };
