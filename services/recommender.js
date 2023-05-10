@@ -7,7 +7,7 @@ const { UserWeights, DefaultUserWeights } = require("../models/UserWeights");
 const { Matrix, solve } = require("ml-matrix");
 
 const computeUserWeights = async (userWeights, imageWeights, rating) => {
-  console.log(`computeUserWeights(${userWeights})`);
+  console.log(`computeUserWeights(${userWeights}, ${imageWeights}, ${rating})`);
 
   const d = userWeights.XTy_flat.length;
 
