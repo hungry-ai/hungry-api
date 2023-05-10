@@ -5,7 +5,7 @@ const imageTagsSchema = new Schema(
   {
     image: { type: Schema.Types.ObjectId, ref: "Image" },
     tags: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
-    prMatch: [Schema.Types.Decimal128],
+    weights: [Schema.Types.Decimal128],
   },
   { timestamps: true }
 );

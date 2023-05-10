@@ -1,10 +1,5 @@
 const express = require("express");
-const {
-  storyMention,
-  getStories,
-  getReviews,
-  getRestaurants,
-} = require("../services/hungryai");
+const hungryai = require("../services/hungryai");
 
 const instagramRoutes = express.Router();
 
@@ -13,7 +8,7 @@ instagramRoutes.route("/instagram/story-mention").post((req, res) => {
 
   if (req && req.body) {
     const webhook = req.body;
-    storyMention(webhook);
+    hungryai.storyMention(webhook);
   } else {
     console.log(`invalid story mention`);
   }
@@ -26,7 +21,8 @@ instagramRoutes.route("/instagram/stories").get((req, res) => {
 
   console.log(`/instagram/stories username=${username}`);
 
-  getStories(username)
+  hungryai
+    .getStories(username)
     .then((stories) => {
       res.send({ stories: stories ? stories : [] });
     })
@@ -41,7 +37,8 @@ instagramRoutes.route("/instagram/reviews").get((req, res) => {
 
   console.log(`/instagram/reviews username=${username}`);
 
-  getReviews(username)
+  hungryai
+    .getReviews(username)
     .then((reviews) => {
       res.send({ reviews: reviews ? reviews : [] });
     })
@@ -56,7 +53,8 @@ instagramRoutes.route("/instagram/restaurants").get((req, res) => {
 
   console.log(`/instagram/restaurants username=${username} zip=${zip}`);
 
-  getRestaurants(username, zip)
+  hungryai
+    .getRestaurants(username, zip)
     .then((restaurants) => {
       res.send({ restaurants: restaurants ? restaurants : [] });
     })
