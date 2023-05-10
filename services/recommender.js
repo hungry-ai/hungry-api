@@ -2,28 +2,97 @@ const google = require("./google");
 
 const ImageWeights = require("../models/ImageWeights");
 const TagWeights = require("../models/TagWeights");
-const UserWeights = require("../models/UserWeights");
+const { UserWeights, DefaultUserWeights } = require("../models/UserWeights");
 
-// TODO
+const { Matrix, solve } = require("ml-matrix");
+
+const computeUserWeights = async (userWeights, imageWeights, rating) => {
+  console.log(`computeUserWeights(${userWeights})`);
+
+  const d = userWeights.XTy_flat.length;
+
+  userWeights.XTX_flat = userWeights.XTX_flat.map(
+    (x, i) => x + imageWeights[Math.floor(i / d)] * imageWeights[i % d]
+  );
+  userWeights.XTy_flat = userWeights.XTy_flat.map(
+    (y, i) => y + rating * imageWeights[i]
+  );
+  userWeights.stale = true;
+
+  return userWeights.save().catch((error) => {
+    console.log(
+      `computeUserWeights(${userWeights}, ${imageWeights}, ${rating}) failed:\n${error}`
+    );
+    throw error;
+  });
+};
+
 const addReview = async (review) => {
   console.log(`addReview(${review})`);
 
-  // TODO: update user weights
+  return Promise.all([
+    getUserWeights(review.user),
+    getImageWeights(review.image),
+  ])
+    .then(([userWeights, imageWeights]) =>
+      computeUserWeights(userWeights, imageWeights, review.rating)
+    )
+    .then(() => review)
+    .catch((error) => {
+      console.log(`addReview(${review}) failed:\n${error}`);
+      throw error;
+    });
 };
 
-// TODO
 const getDefaultUserWeights = async () => {
+  // TODO: load this on mongo connect rather than pulling from db each time?
   console.log(`getDefaultUserWeights()`);
 
-  // TODO: compute average of all user weights
+  return DefaultUserWeights.findOne().catch((error) => {
+    console.log(`getDefaultUserWeights() failed:\n${error}`);
+    throw error;
+  });
 };
 
-const getUserWeights = async (user) => {
-  console.log(`getUserWeights(${user})`);
+const evaluateUserWeights = async (userWeights) => {
+  console.log(`evaluateUserWeights(${userWeights})`);
+
+  try {
+    const d = userWeights.XTy_flat.length;
+
+    const A = new Matrix(
+      Array.from({ length: d }, (_, i) =>
+        userWeights.XTX_flat.slice(i * d, (i + 1) * d)
+      )
+    );
+    const b = Matrix.columnVector(userWeights.XTy_flat);
+
+    const x = solve(A, b).to1DArray();
+
+    userWeights.weights = x;
+    userWeights.stale = false;
+  } catch (error) {
+    console.log(`evaluateUserWeights(${userWeights}) failed:\n${error}`);
+    throw error;
+  }
+
+  return userWeights.save().catch((error) => {
+    console.log(`evaluateUserWeights(${userWeights}) failed:\n${error}`);
+    throw error;
+  });
+};
+
+const getUserWeights = async (user, evaluate = false) => {
+  console.log(`getUserWeights(${user}, ${evaluate})`);
 
   return UserWeights.findOne({ user: user })
     .then((userWeights) =>
       userWeights ? userWeights : getDefaultUserWeights()
+    )
+    .then((userWeights) =>
+      evaluate && userWeights.stale
+        ? evaluateUserWeights(userWeights)
+        : userWeights
     )
     .catch((error) => {
       console.log(`getUserWeights(${user}) failed:\n${error}`);
@@ -32,6 +101,7 @@ const getUserWeights = async (user) => {
 };
 
 const getTagWeights = async (tag) => {
+  // TODO: load this on mongo connect rather than pulling from db each time?
   console.log(`getTagWeights(${tag})`);
 
   return TagWeights.findOne({ tag: tag }).catch((error) => {
@@ -47,9 +117,7 @@ const weightedVectorSum = async (vectors, weights) => {
 
   return vectors
     .map((vector, i) => vector.map((v) => (v * weights[i]) / weightSum))
-    .reduce((x, y) =>
-      Array.from({ length: x.length }).map((_, i) => x[i] + y[i])
-    );
+    .reduce((x, y) => Array.from({ length: x.length }, (_, i) => x[i] + y[i]));
 };
 
 const addImageWeights = async (image) => {
@@ -141,7 +209,7 @@ const addRestaurantPrediction = async (userWeights, restaurant) => {
 const getRecommendations = async (user, zip) => {
   console.log(`getRecommendations(${user}, ${zip})`);
 
-  return getUserWeights(user)
+  return getUserWeights(user, true)
     .then((userWeights) =>
       getRestaurants(zip).then((restaurants) =>
         Promise.all(

@@ -13,5 +13,12 @@ const userWeightsSchema = new Schema(
 );
 
 const UserWeights = mongoose.model("UserWeights", userWeightsSchema);
+const DefaultUserWeights = mongoose.model(
+  "DefaultUserWeights",
+  userWeightsSchema
+);
 
-module.exports = UserWeights;
+module.exports = {
+  UserWeights: UserWeights,
+  DefaultUserWeights: DefaultUserWeights,
+};
