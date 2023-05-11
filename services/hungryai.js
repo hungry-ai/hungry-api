@@ -109,8 +109,10 @@ const storyMention = async (webhook) => {
   console.log(`storyMention(${webhook})`);
 
   return instagram
-    .parseWebhook(webhook)
-    .then((messages) => Promise.allSettled(messages.map(storyMentionSingle)))
+    .getStoryMention(webhook)
+    .then((storyMention) =>
+      Promise.allSettled(storyMention.map(storyMentionSingle))
+    )
     .catch((error) => {
       console.log(`storyMention(${webhook}) failed:\n${error}`);
       throw error;
@@ -142,7 +144,6 @@ const getRestaurants = async (instagramUsername, zip) => {
 
   return getUser(instagramUsername)
     .then((user) => recommender.getRecommendations(user, zip))
-    .then((restaurants) => Promise.all(restaurants.map(addRestaurantImages)))
     .catch((error) => {
       console.log(
         `getRestaurants(${instagramUsername}, ${zip}) failed:\n${error}`

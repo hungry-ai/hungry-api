@@ -1,19 +1,21 @@
 const express = require("express");
 const hungryai = require("../services/hungryai");
 
+const InstagramStoryMention = require("../models/InstagramStoryMention");
+
 const instagramRoutes = express.Router();
 
 instagramRoutes.route("/instagram/story-mention").post((req, res) => {
   console.log(`/instagram/story-mention`);
 
-  if (req && req.body) {
-    const webhook = req.body;
+  try {
+    const webhook = new InstagramStoryMention(req.body);
     hungryai.storyMention(webhook);
-  } else {
+    res.sendStatus(200);
+  } catch (error) {
     console.log(`invalid story mention`);
+    res.sendStatus(400);
   }
-
-  res.sendStatus(200);
 });
 
 instagramRoutes.route("/instagram/stories").get((req, res) => {

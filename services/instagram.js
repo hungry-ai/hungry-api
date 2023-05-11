@@ -1,5 +1,7 @@
 const axios = require("axios");
 
+const InstagramStoryMention = require("../models/InstagramStoryMention");
+
 const HUNGRY_AI_ACCOUNTS = [
   process.env.HUNGRY_AI_ACCOUNT_1,
   process.env.HUNGRY_AI_ACCOUNT_2,
@@ -104,6 +106,27 @@ const parseWebhook = async (webhook) => {
     console.log(`poorly formatted webhook:\n${webhook}`);
     return [];
   }
+};
+
+const addStoryMention = (webhook) => {
+  console.log(`addStoryMention(${webhook})`);
+
+  return new InstagramStoryMention(webhook).save().catch((error) => {
+    console.log(`addStoryMention(${webhook}) failed:\n${error}`);
+    throw error;
+  });
+};
+
+const getStoryMention = async (webhook) => {
+  console.log(`getStoryMention(${webhook})`);
+
+  return webhook
+    .save()
+    .then(parseWebhook)
+    .catch((error) => {
+      console.log(`getStoryMention(${webhook}) failed:\n${webhook}`);
+      throw error;
+    });
 };
 
 const parseStoryMessage = async (message) => {
@@ -223,6 +246,6 @@ const getStories = async (instagramUsername) => {
 };
 
 module.exports = {
-  parseWebhook: parseWebhook,
+  getStoryMention: getStoryMention,
   getStories: getStories,
 };

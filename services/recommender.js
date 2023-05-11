@@ -44,14 +44,33 @@ const addReview = async (review) => {
     });
 };
 
-const getDefaultUserWeights = async () => {
-  // TODO: load this on mongo connect rather than pulling from db each time?
-  console.log(`getDefaultUserWeights()`);
+// TODO: delete
+// DefaultUserWeights should have one row, containing:
+// user: null,
+// weights: open research problem,
+// XTX_flat: alpha I_{dxd},
+// XTy_flat: 0_{dx1},
+// stale: false,
 
-  return DefaultUserWeights.findOne().catch((error) => {
-    console.log(`getDefaultUserWeights() failed:\n${error}`);
-    throw error;
-  });
+const getDefaultUserWeights = async (user) => {
+  // TODO: load this on mongo connect rather than pulling from db each time?
+  console.log(`getDefaultUserWeights(${user})`);
+
+  return DefaultUserWeights.findOne()
+    .then(
+      (defaultUserWeights) =>
+        new UserWeights({
+          user: user,
+          weights: defaultUserWeights.weights,
+          XTX_flat: defaultUserWeights.XTX_flat,
+          XTy_flat: defaultUserWeights.XTy_flat,
+          stale: defaultUserWeights.stale,
+        })
+    )
+    .catch((error) => {
+      console.log(`getDefaultUserWeights(${user}) failed:\n${error}`);
+      throw error;
+    });
 };
 
 const evaluateUserWeights = async (userWeights) => {
@@ -87,7 +106,7 @@ const getUserWeights = async (user, evaluate = false) => {
 
   return UserWeights.findOne({ user: user })
     .then((userWeights) =>
-      userWeights ? userWeights : getDefaultUserWeights()
+      userWeights ? userWeights : getDefaultUserWeights(user)
     )
     .then((userWeights) =>
       evaluate && userWeights.stale
@@ -113,11 +132,15 @@ const getTagWeights = async (tag) => {
 const weightedVectorSum = async (vectors, weights) => {
   console.log(`weightedVectorSum(${vectors}, ${weights})`);
 
-  const weightSum = weights.reduce((x, y) => x + y);
+  const d = 20;
+  const weightSum = weights.reduce((x, y) => x + y, 0);
 
   return vectors
     .map((vector, i) => vector.map((v) => (v * weights[i]) / weightSum))
-    .reduce((x, y) => Array.from({ length: x.length }, (_, i) => x[i] + y[i]));
+    .reduce(
+      (x, y) => Array.from({ length: d }, (_, i) => x[i] + y[i]),
+      Array.from({ length: d }, (_, i) => 0)
+    );
 };
 
 const addImageWeights = async (image) => {
@@ -126,8 +149,8 @@ const addImageWeights = async (image) => {
   return google
     .getImageTags(image)
     .then((imageTags) =>
-      Promise.all(imageTags.tags.map(getTagWeights)).then((tagWeights) =>
-        weightedVectorSum(tagWeights, imageTags.weights)
+      Promise.all(imageTags.tags.map(getTagWeights).filter(Boolean)).then(
+        (tagWeights) => weightedVectorSum(tagWeights, imageTags.weights)
       )
     )
     .then((weights) =>
@@ -167,28 +190,13 @@ const getImagePrediction = async (userWeights, image) => {
     });
 };
 
-const addRestaurantImages = async (restaurant) => {
-  console.log(`addRestaurantImages(${restaurant})`);
-
-  return google
-    .getRestaurantImages(restaurant)
-    .then((images) => ({ restaurant: restaurant, images: images }))
-    .catch((error) => {
-      console.log(`addRestaurantImages(${restaurant}) failed:\n${error}`);
-      throw error;
-    });
-};
-
 const getRestaurants = async (zip) => {
   console.log(`getRestaurants(${zip})`);
 
-  return google
-    .getRestaurants(zip)
-    .then((restaurants) => Promise.all(restaurants.map(addRestaurantImages)))
-    .catch((error) => {
-      console.log(`getRestaurants(${zip})`);
-      throw error;
-    });
+  return google.getRestaurants(zip).catch((error) => {
+    console.log(`getRestaurants(${zip})`);
+    throw error;
+  });
 };
 
 const addRestaurantPrediction = async (userWeights, restaurant) => {
