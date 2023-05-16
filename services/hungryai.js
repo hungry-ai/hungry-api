@@ -1,121 +1,40 @@
-const recommender = require("./recommender");
 const instagram = require("./instagram");
-const google = require("./google");
+const recommender = require("./recommender");
 
-const User = require("../models/User");
-const Image = require("../models/Image");
-const Review = require("../models/Review");
+const { User } = require("../models/User");
+const { Review } = require("../models/Review");
 
-const addUser = async (instagramUsername) => {
-  console.log(`addUser(${instagramUsername})`);
+const storyMentionSingle = async (webhook) => {
+  console.log(`storyMentionSingle(${webhook})`);
 
-  return new User({ instagramUsername: instagramUsername })
-    .save()
-    .catch((error) => {
-      console.log(`addUser(${instagramUsername}) failed:\n${error}`);
-      throw error;
-    });
-};
-
-const getUser = async (instagramUsername) => {
-  console.log(`getUser(${instagramUsername})`);
-
-  return User.findOne({ instagramUsername: instagramUsername }).catch(
-    (error) => {
-      console.log(`getUser(${instagramUsername}) failed:\n${error}`);
-      throw error;
-    }
-  );
-};
-
-const getOrAddUser = async (instagramUsername) => {
-  console.log(`getOrAddUser(${instagramUsername})`);
-
-  return getUser(instagramUsername)
-    .then((user) => (user ? user : addUser(instagramUsername)))
-    .catch((error) => {
-      console.log(`getOrAddUser(${instagramUsername}) failed:\n${error}`);
-    });
-};
-
-const addImage = async (url) => {
-  console.log(`addImage(${url})`);
-
-  return new Image({ url: url })
-    .save()
-    .then((image) => google.getImageTags(image).then(() => image))
-    .catch((error) => {
-      console.log(`addImage(${url}) failed:\n${error}`);
-      throw error;
-    });
-};
-
-const getImage = async (url) => {
-  console.log(`getImage(${url})`);
-
-  return Image.findOne({ url: url }).catch((error) => {
-    console.log(`getImage(${url}) failed:\n${error}`);
-    throw error;
-  });
-};
-
-const getOrAddImage = async (url) => {
-  console.log(`getOrAddImage(${url})`);
-
-  return getImage(url)
-    .then((image) => (image ? image : addImage(url)))
-    .catch((error) => {
-      console.log(`getOrAddImage(${url}) failed:\n${error}`);
-      throw error;
-    });
-};
-
-const addReview = async (user, image, rating, timestamp) => {
-  console.log(`addReview(${user}, ${image}, ${rating}, ${timestamp})`);
-
-  return new Review({
-    user: user,
-    image: image,
-    rating: rating,
-    timestamp: timestamp,
-  })
-    .save()
-    .then(recommender.addReview)
-    .catch((error) => {
-      console.log(
-        `addReview(${user}, ${image}, ${rating}, ${timestamp}) failed:\n${error}`
-      );
-      throw error;
-    });
-};
-
-const storyMentionSingle = async (message) => {
-  console.log(`storyMentionSingle(${message})`);
-
-  return Promise.all([
-    getOrAddUser(message.username),
-    getOrAddImage(message.url),
+  return Promise.allSettled([
+    recommender.getOrAddUser(webhook.instagramUsername),
+    recommender.getOrAddImage(webhook.url),
   ])
     .then(([user, image]) =>
-      addReview(user, image, message.rating, message.timestamp)
+      new Review({
+        user: user.value,
+        image: image.value,
+        rating: webhook.rating,
+        instagramTimestamp: webhook.instagramTimestamp,
+      }).save()
     )
+    .then(recommender.addReview)
     .catch((error) => {
-      console.log(`storyMentionSingle(${message}) failed:\n${error}`);
+      console.log(`storyMentionSingle(${webhook}) failed:\n${error}`);
       throw error;
     });
 };
 
-const storyMention = async (webhook) => {
-  console.log(`storyMention(${webhook})`);
+const storyMention = async (instagramWebhook) => {
+  console.log(`storyMention(${instagramWebhook})`);
 
-  return instagram
-    .getStoryMention(webhook)
-    .then((storyMention) =>
-      Promise.allSettled(storyMention.map(storyMentionSingle))
-    )
+  return instagramWebhook
+    .save()
+    .then(instagram.parseWebhook)
+    .then((webhooks) => Promise.allSettled(webhooks.map(storyMentionSingle)))
     .catch((error) => {
-      console.log(`storyMention(${webhook}) failed:\n${error}`);
-      throw error;
+      console.log(`storyMention(${instagramWebhook}) failed:\n${error}`);
     });
 };
 
@@ -131,24 +50,24 @@ const getStories = async (instagramUsername) => {
 const getReviews = async (instagramUsername) => {
   console.log(`getReviews(${instagramUsername})`);
 
-  return getUser(instagramUsername)
-    .then((user) => Review.find({ user: user }))
+  return User.findOne({ instagramUsername: instagramUsername })
+    .then((user) => (user ? Review.find({ user: user }) : []))
     .catch((error) => {
       console.log(`getReviews(${instagramUsername}) failed:\n${error}`);
-      throw error;
+      return [];
     });
 };
 
 const getRestaurants = async (instagramUsername, zip) => {
   console.log(`getRestaurants(${instagramUsername}, ${zip})`);
 
-  return getUser(instagramUsername)
+  return User.findOne({ instagramUsername: instagramUsername })
     .then((user) => recommender.getRecommendations(user, zip))
     .catch((error) => {
       console.log(
         `getRestaurants(${instagramUsername}, ${zip}) failed:\n${error}`
       );
-      throw error;
+      return [];
     });
 };
 

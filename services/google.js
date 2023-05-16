@@ -3,27 +3,13 @@ const vision = require("@google-cloud/vision");
 const { GoogleAuth } = require("google-auth-library");
 const usZips = require("us-zips");
 
-const Image = require("../models/Image");
-const GoogleImageTags = require("../models/GoogleImageTags");
-const ImageTags = require("../models/ImageTags");
-const GoogleRestaurant = require("../models/GoogleRestaurant");
-const Restaurant = require("../models/Restaurant");
+const { Tag, GoogleImageTags } = require("../models/Tag");
+const { GoogleRestaurant } = require("../models/Restaurant");
 
 const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
-const addGoogleImageTags = async (image, tags) => {
-  console.log(`addGoogleImageTags(${image}, ${tags})`);
-
-  return new GoogleImageTags({ image: image, tags: tags })
-    .save()
-    .catch((error) => {
-      console.log(`addGoogleImageTags(${image}, ${tags}) failed:\n${error}`);
-      throw error;
-    });
-};
-
-const getGoogleImageTags = async (image) => {
-  console.log(`getGoogleImageTags(${image})`);
+const getGoogleTags = async (url) => {
+  console.log(`getGoogleTags(${url})`);
 
   const auth = new GoogleAuth({
     keyFilename: "service-account-key.json",
@@ -33,54 +19,64 @@ const getGoogleImageTags = async (image) => {
   const client = new vision.ImageAnnotatorClient({ auth });
 
   return client
-    .labelDetection(image.url)
-    .then(([result]) => addGoogleImageTags(image, result.labelAnnotations))
+    .labelDetection(url)
+    .then(([result]) => result.labelAnnotations)
+    .then((tags) => new GoogleImageTags({ url: url, tags: tags }).save())
     .catch((error) => {
-      console.log(`getGoogleImageTags(${image}) failed:\n${error}`);
+      console.log(`getGoogleTags(${url}) failed:\n${error}`);
       throw error;
     });
 };
 
-const parseGoogleImageTags = async (image, googleImageTags) => {
-  console.log(`parseGoogleImageTags(${googleImageTags})`);
+const getTag = async (googleTag) => {
+  console.log(`getTag(${googleTag})`);
 
-  return new ImageTags({
-    image: image,
-    tags: googleImageTags.tags.map((googleTag) => ({
-      name: googleTag.description.toLowerCase(),
-    })),
-    weights: googleImageTags.tags.map((googleTag) => googleTag.score),
+  // TODO remove
+  return new Tag({
+    name: googleTag.description.toLowerCase(),
+    weights: Array.from({ length: 20 }, (_, i) => i),
   })
-    .save()
+    .then((tag) => ({ tag: tag, weight: parseFloat(googleTag.score) }))
     .catch((error) => {
-      console.log(`parseGoogleImageTags(${googleImageTags})`);
+      console.log(`getTag(${googleTag}) failed:\n${error}`);
+      throw error;
+    });
+
+  return Tag.findOne({ name: googleTag.description.toLowerCase() })
+    .then((tag) => ({ tag: tag, weight: parseFloat(googleTag.score) }))
+    .catch((error) => {
+      console.log(`getTag(${googleTag}) failed:\n${error}`);
       throw error;
     });
 };
 
-const getImageTags = async (image) => {
-  console.log(`getImageTags(${image})`);
+const getTags = async (url) => {
+  console.log(`getTags(${url})`);
 
-  return GoogleImageTags.findOne({ image: image })
-    .then((googleImageTags) =>
-      googleImageTags ? googleImageTags : getGoogleImageTags(image)
-    )
-    .then((googleImageTags) => parseGoogleImageTags(image, googleImageTags))
-    .catch((error) => {
-      console.log(`getImageTags(${image}) failed:\n${error}`);
-      throw error;
-    });
-};
-
-const addGoogleRestaurant = async (restaurant, zip) => {
-  console.log(`addGoogleRestaurant(${restaurant}, ${zip})`);
-
-  return new GoogleRestaurant({ ...restaurant, zip: zip })
-    .save()
-    .catch((error) => {
+  return getGoogleTags(url)
+    .then((googleTags) => Promise.all(googleTags.tags.map(getTag)))
+    .then((tags) => tags.filter((tag) => tag.tag))
+    .then((tags) => {
+      console.log(tags.map((tag) => tag.tag.name));
+      console.log(tags.map((tag) => tag.weight));
+      return tags;
+    })
+    .then((tags) => {
+      const totalWeight = tags
+        .map((tag) => tag.weight)
+        .reduce((x, y) => x + y, 0);
+      console.log(totalWeight);
       console.log(
-        `addGoogleRestaurant(${restaurant}, ${zip}) failed:\n${error}`
+        tags.length ? tags.map((tag) => tag.weight / totalWeight) : []
       );
+
+      return [
+        tags.map((tag) => tag.tag),
+        tags.length ? tags.map((tag) => tag.weight / totalWeight) : [],
+      ];
+    })
+    .catch((error) => {
+      console.log(`getTags(${url}) failed:\n${error}`);
       throw error;
     });
 };
@@ -95,44 +91,14 @@ const getGoogleRestaurants = async (zip) => {
     .get(url)
     .then((res) => {
       const { results } = res.data;
-      console.log(res.data);
-      console.log(results);
       return Promise.allSettled(
-        results.map((restaurant) => addGoogleRestaurant(restaurant, zip))
+        results.map((restaurant) =>
+          new GoogleRestaurant({ ...restaurant, zip: zip }).save()
+        )
       );
     })
     .catch((error) => {
       console.log(`getGoogleRestaurants(${zip}) failed:\n${error}`);
-      throw error;
-    });
-};
-
-const getGooglePlacePhoto = async (photoRef) => {
-  console.log(`getGooglePlacePhoto(${photoRef})`);
-
-  const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoRef}&key=${API_KEY}`;
-
-  return new Image({ url: url }).save().catch((error) => {
-    console.log(`getGooglePlacePhoto(${photoRef}) failed:\n${error}`);
-    throw error;
-  });
-};
-
-const parseGoogleRestaurant = async (googleRestaurant) => {
-  console.log(`parseGoogleRestaurants(${googleRestaurant})`);
-
-  return Promise.all(
-    googleRestaurant.photos.map((photo) =>
-      getGooglePlacePhoto(photo.photo_reference)
-    )
-  )
-    .then((images) =>
-      new Restaurant({ name: googleRestaurant.name, images: images }).save()
-    )
-    .catch((error) => {
-      console.log(
-        `parseGoogleRestaurants(${googleRestaurant}) failed:\n${error}`
-      );
       throw error;
     });
 };
@@ -144,16 +110,18 @@ const getRestaurants = async (zip) => {
     .then((googleRestaurants) =>
       googleRestaurants.length ? googleRestaurants : getGoogleRestaurants(zip)
     )
-    .then((googleRestaurants) =>
-      Promise.all(googleRestaurants.map(parseGoogleRestaurant))
-    )
     .catch((error) => {
-      console.log(`getRestaurants(${zip}) failed:\n${error}`);
+      console.log(`getRestaurants(${zip})`);
       throw error;
     });
 };
 
+const getPhotoUrl = (photoRef) => {
+  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photoRef}&key=${API_KEY}`;
+};
+
 module.exports = {
-  getImageTags: getImageTags,
+  getTags: getTags,
   getRestaurants: getRestaurants,
+  getPhotoUrl: getPhotoUrl,
 };

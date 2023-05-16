@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const instagramStoryMentionSchema = new Schema(
+const instagramWebhookSchema = new Schema(
   {
     object: String,
     entry: [
@@ -30,9 +30,9 @@ const instagramStoryMentionSchema = new Schema(
   { timestamps: true }
 );
 
-const InstagramStoryMention = mongoose.model(
-  "InstagramStoryMention",
-  instagramStoryMentionSchema
+const InstagramWebhook = mongoose.model(
+  "InstagramWebhook",
+  instagramWebhookSchema
 );
 
-module.exports = InstagramStoryMention;
+module.exports = { InstagramWebhook };
