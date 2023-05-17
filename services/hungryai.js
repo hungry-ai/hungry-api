@@ -8,7 +8,7 @@ const storyMentionSingle = async (webhook) => {
   console.log(`storyMentionSingle(${webhook})`);
 
   return Promise.allSettled([
-    recommender.getOrAddUser(webhook.instagramUsername),
+    recommender.getOrAddUser(webhook.instagramId),
     recommender.getOrAddImage(webhook.url),
   ])
     .then(([user, image]) =>
@@ -41,16 +41,21 @@ const storyMention = async (instagramWebhook) => {
 const getStories = async (instagramUsername) => {
   console.log(`getStories(${instagramUsername})`);
 
-  return instagram.getStories(instagramUsername).catch((error) => {
-    console.log(`getStories(${instagramUsername}) failed:\n${error}`);
-    throw error;
-  });
+  return instagram
+    .getInstagramId(instagramUsername)
+    .then((instagramId) => instagram.getStories(instagramId))
+    .catch((error) => {
+      console.log(`getStories(${instagramUsername}) failed:\n${error}`);
+      throw error;
+    });
 };
 
 const getReviews = async (instagramUsername) => {
   console.log(`getReviews(${instagramUsername})`);
 
-  return User.findOne({ instagramUsername: instagramUsername })
+  return instagram
+    .getInstagramId(instagramUsername)
+    .then((instagramId) => User.findOne({ instagramId: instagramId }))
     .then((user) => (user ? Review.find({ user: user }) : []))
     .catch((error) => {
       console.log(`getReviews(${instagramUsername}) failed:\n${error}`);
@@ -61,7 +66,9 @@ const getReviews = async (instagramUsername) => {
 const getRestaurants = async (instagramUsername, zip) => {
   console.log(`getRestaurants(${instagramUsername}, ${zip})`);
 
-  return User.findOne({ instagramUsername: instagramUsername })
+  return instagram
+    .getInstagramId(instagramUsername)
+    .then((instagramId) => User.findOne({ instagramId: instagramId }))
     .then((user) => recommender.getRecommendations(user, zip))
     .catch((error) => {
       console.log(

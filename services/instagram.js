@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { User } = require("../models/User");
 
 const HUNGRY_AI_ACCOUNTS = [
   process.env.HUNGRY_AI_ACCOUNT_1,
@@ -41,7 +42,7 @@ const parseWebhook = async (instagramWebhook) => {
                     attachment.payload.url
                       ? [
                           {
-                            instagramUsername: message.sender.id,
+                            instagramId: message.sender.id,
                             url: attachment.payload.url,
                             rating:
                               HUNGRY_AI_ACCOUNTS.indexOf(message.recipient.id) +
@@ -76,11 +77,11 @@ const parseStories = async (instagramStories) => {
               message.story.mention &&
               message.story.mention.link &&
               message.from &&
-              message.from.username &&
+              message.from.id &&
               message.created_time
                 ? [
                     {
-                      username: message.from.username,
+                      id: message.from.id,
                       url: message.story.mention.link,
                       created_time: message.created_time,
                     },
@@ -120,17 +121,85 @@ const getAllStories = async () => {
     });
 };
 
-const getStories = async (instagramUsername) => {
-  console.log(`getStories(${instagramUsername})`);
+const getStories = async (instagramId) => {
+  console.log(`getStories(${instagramId})`);
 
   return getAllStories()
     .then((allStories) =>
-      instagramUsername
-        ? allStories.filter((story) => story.username === instagramUsername)
+      instagramId
+        ? allStories.filter((story) => story.id === instagramId)
         : allStories
     )
+    .then((stories) => {
+      if (instagramId && stories.length) {
+        User.findOneAndUpdate(
+          { instagramId: stories[0].id },
+          { instagramId: instagramId }
+        );
+      }
+      return stories;
+    })
     .catch((error) => {
-      console.log(`getStories(${instagramUsername}) failed:\n${error}`);
+      console.log(`getStories(${instagramId}) failed:\n${error}`);
+      throw error;
+    });
+};
+
+// TODO
+const getInstagramIdByRating = async (instagramUsername, rating) => {
+  console.log(`getInstagramIdByRating(${instagramUsername}, ${rating})`);
+
+  return axios
+    .get(
+      "https://graph.facebook.com/v16.0/me/conversations?platform=instagram&fields=participants&access_token=" +
+        ACCESS_TOKENS[rating - 1]
+    )
+    .then((conversations) =>
+      conversations &&
+      conversations.data &&
+      conversations.data.data &&
+      Array.isArray(conversations.data.data)
+        ? conversations.data.data.flatMap((conversation) =>
+            conversation &&
+            conversation.participants &&
+            conversation.participants.data &&
+            Array.isArray(conversation.participants.data)
+              ? conversation.participants.data.flatMap((participant) =>
+                  participant &&
+                  participant.username &&
+                  participant.username === instagramUsername &&
+                  participant.id
+                    ? [participant.id]
+                    : []
+                )
+              : []
+          )
+        : []
+    )
+    .then((ids) => ids[0]);
+};
+
+const getInstagramId = async (instagramUsername) => {
+  console.log(`getInstagramId(${instagramUsername})`);
+
+  return User.findOne({ instagramUsername: instagramUsername })
+    .then((user) =>
+      user
+        ? user.instagramId
+        : Promise.any(
+            Array.from({ length: 5 }, (_, i) =>
+              getInstagramIdByRating(instagramUsername, i + 1)
+            )
+          ).then((instagramId) => {
+            User.findOneAndUpdate(
+              { instagramId: instagramId },
+              { instagramUsername: instagramUsername }
+            );
+            return instagramId;
+          })
+    )
+    .catch((error) => {
+      console.log(`getInstagramId(${instagramUsername}) failed:\n${error}`);
       throw error;
     });
 };
@@ -138,4 +207,5 @@ const getStories = async (instagramUsername) => {
 module.exports = {
   parseWebhook: parseWebhook,
   getStories: getStories,
+  getInstagramId: getInstagramId,
 };

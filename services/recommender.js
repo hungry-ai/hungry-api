@@ -38,22 +38,22 @@ const getDefaultUserWeights = async () => {
     });
 };
 
-const getOrAddUser = async (instagramUsername) => {
-  console.log(`getOrAddUser(${instagramUsername})`);
+const getOrAddUser = async (instagramId) => {
+  console.log(`getOrAddUser(${instagramId})`);
 
-  return User.findOne({ instagramUsername: instagramUsername })
+  return User.findOne({ instagramId: instagramId })
     .then((user) =>
       user
         ? user
         : getDefaultUserWeights().then((weights) =>
             new User({
-              instagramUsername: instagramUsername,
+              instagramId: instagramId,
               weights: weights,
             }).save()
           )
     )
     .catch((error) => {
-      console.log(`getOrAddUser(${instagramUsername}) failed:\n${error}`);
+      console.log(`getOrAddUser(${instagramId}) failed:\n${error}`);
       throw error;
     });
 };

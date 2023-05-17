@@ -19,6 +19,7 @@ const DefaultUserWeights = mongoose.model(
 const userSchema = new Schema(
   {
     instagramUsername: String,
+    instagramId: String,
     weights: userWeightsSchema,
   },
   { timestamps: true }
