@@ -36,6 +36,7 @@ const getTag = async (googleTag) => {
     name: googleTag.description.toLowerCase(),
     weights: Array.from({ length: 20 }, (_, i) => i),
   })
+    .save()
     .then((tag) => ({ tag: tag, weight: parseFloat(googleTag.score) }))
     .catch((error) => {
       console.log(`getTag(${googleTag}) failed:\n${error}`);

@@ -14,6 +14,7 @@ const getDefaultUserWeights = async () => {
     XTy_flat: Array.from({ length: 20 }, (_, i) => i),
     stale: false,
   })
+    .save()
     .then((weights) => ({
       weights: weights.weights,
       XTX_flat: weights.XTX_flat,
