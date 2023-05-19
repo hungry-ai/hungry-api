@@ -11,9 +11,15 @@ const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 const getGoogleTags = async (url) => {
   console.log(`getGoogleTags(${url})`);
 
+  const client_email = process.env.GOOGLE_CLIENT_EMAIL;
+  const private_key = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
+
   const auth = new GoogleAuth({
-    keyFilename: "service-account-key.json",
-    scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+    credentials: {
+      client_email,
+      private_key,
+    },
+    scopes: "https://www.googleapis.com/auth/cloud-platform",
   });
 
   const client = new vision.ImageAnnotatorClient({ auth });
@@ -31,7 +37,7 @@ const getGoogleTags = async (url) => {
 const getTag = async (googleTag) => {
   console.log(`getTag(${googleTag})`);
 
-  // TODO remove
+  /*// TODO remove
   return new Tag({
     name: googleTag.description.toLowerCase(),
     weights: Array.from({ length: 20 }, (_, i) => i),
@@ -41,7 +47,7 @@ const getTag = async (googleTag) => {
     .catch((error) => {
       console.log(`getTag(${googleTag}) failed:\n${error}`);
       throw error;
-    });
+    });*/
 
   return Tag.findOne({ name: googleTag.description.toLowerCase() })
     .then((tag) => ({ tag: tag, weight: parseFloat(googleTag.score) }))

@@ -7,7 +7,7 @@ const { Image } = require("../models/Image");
 const getDefaultUserWeights = async () => {
   console.log(`getDefaultUserWeights()`);
 
-  // TODO: remove, this was for testing
+  /*// TODO: remove, this was for testing
   return new DefaultUserWeights({
     weights: Array.from({ length: 20 }, (_, i) => i),
     XTX_flat: Array.from({ length: 400 }, (_, i) => i),
@@ -24,7 +24,7 @@ const getDefaultUserWeights = async () => {
     .catch((error) => {
       console.log(`getDefaultUserWeights() failed:\n${error}`);
       throw error;
-    });
+    });*/
 
   return DefaultUserWeights.findOne()
     .then((weights) => ({
@@ -164,7 +164,7 @@ const getUserWeights = async (user) => {
 };
 
 const getPrediction = async (userWeights, image) => {
-  console.log(`getPrediction(${userWeights}, ${image})`);
+  //console.log(`getPrediction(${userWeights}, ${image})`);
 
   return userWeights
     .map((u, i) => parseFloat(u) * parseFloat(image.weights[i]))
@@ -172,7 +172,7 @@ const getPrediction = async (userWeights, image) => {
 };
 
 const addRestaurantPrediction = async (user, restaurant) => {
-  console.log(`addRestaurantPrediction(${user}, ${restaurant})`);
+  //console.log(`addRestaurantPrediction(${user}, ${restaurant})`);
 
   return getUserWeights(user)
     .then((userWeights) =>
