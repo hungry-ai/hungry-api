@@ -37,8 +37,6 @@ const getImageTags = async (url) => {
 const getRestaurantImages = async (googleRestaurant) => {
   console.log(`google.getRestaurantImages(${googleRestaurant})`);
 
-  console.log(`googleRestaurant.photos: ${googleRestaurant.photos}`);
-
   return googleRestaurant.photos.map(
     (googlePhoto) =>
       `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${googlePhoto.photo_reference}&key=${API_KEY}`
@@ -61,6 +59,13 @@ const getRestaurants = async (zip) => {
         )
       );
     })
+    .then((restaurantsSettled) =>
+      restaurantsSettled.flatMap((restaurantSettled) =>
+        restaurantSettled.status === "fulfilled"
+          ? [restaurantSettled.value]
+          : []
+      )
+    )
     .catch((error) => {
       console.log(`google.getRestaurants(${zip}) failed:\n${error}`);
       throw error;
