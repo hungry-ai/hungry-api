@@ -25,7 +25,7 @@ const ACCESS_TOKENS = [
 ];
 
 const parseWebhook = async (webhook) => {
-  console.log(`parseWebhook(${webhook})`);
+  console.log(`instagram.parseWebhook(${webhook})`);
 
   return webhook && webhook.entry && Array.isArray(webhook.entry)
     ? webhook.entry.flatMap((entry) =>
@@ -64,7 +64,7 @@ const parseWebhook = async (webhook) => {
 };
 
 const getInstagramUsernameByRating = async (id, rating) => {
-  console.log(`getInstagramUsernameByRating(${id}, ${rating})`);
+  console.log(`instagram.getInstagramUsernameByRating(${id}, ${rating})`);
 
   return axios
     .get(
@@ -97,18 +97,18 @@ const getInstagramUsernameByRating = async (id, rating) => {
 };
 
 const getInstagramUsername = async (id) => {
-  console.log(`getInstagramUsername(${id})`);
+  console.log(`instagram.getInstagramUsername(${id})`);
 
   return Promise.any(
     Array.from({ length: 5 }, (_, i) => getInstagramUsernameByRating(id, i + 1))
   ).catch((error) => {
-    console.log(`getInstagramUsername(${id}) failed:\n${error}`);
+    console.log(`instagram.getInstagramUsername(${id}) failed:\n${error}`);
     throw error;
   });
 };
 
 const parseStories = async (instagramStories) => {
-  console.log(`parseStory(${instagramStories})`);
+  console.log(`instagram.parseStory(${instagramStories})`);
 
   return instagramStories &&
     instagramStories.data &&
@@ -142,7 +142,7 @@ const parseStories = async (instagramStories) => {
 };
 
 const getAllStoriesByRating = async (rating) => {
-  console.log(`getAllStoriesByRating(${rating})`);
+  console.log(`instagram.getAllStoriesByRating(${rating})`);
 
   return axios
     .get(
@@ -152,26 +152,28 @@ const getAllStoriesByRating = async (rating) => {
     .then(parseStories)
     .then((stories) => stories.map((story) => ({ ...story, rating: rating })))
     .catch((error) => {
-      console.log(`getAllStoriesByRating(${rating}) failed:\n${error}`);
+      console.log(
+        `instagram.getAllStoriesByRating(${rating}) failed:\n${error}`
+      );
       throw error;
     });
 };
 
 const getAllStories = async () => {
-  console.log(`getAllStories()`);
+  console.log(`instagram.getAllStories()`);
 
   return Promise.all(
     Array.from({ length: 5 }, (_, i) => getAllStoriesByRating(i + 1))
   )
     .then((stories) => stories.flat())
     .catch((error) => {
-      console.log(`getAllStories() failed:\n${error}`);
+      console.log(`instagram.getAllStories() failed:\n${error}`);
       throw error;
     });
 };
 
 const getStories = async (username) => {
-  console.log(`getStories(${username})`);
+  console.log(`instagram.getStories(${username})`);
 
   return getAllStories()
     .then((allStories) =>
@@ -180,7 +182,7 @@ const getStories = async (username) => {
         : allStories
     )
     .catch((error) => {
-      console.log(`getStories(${username}) failed:\n${error}`);
+      console.log(`instagram.getStories(${username}) failed:\n${error}`);
       throw error;
     });
 };

@@ -7,7 +7,7 @@ const { GoogleImageTags } = require("../models/Tag");
 const { GoogleRestaurant } = require("../models/Restaurant");
 
 const getImageTags = async (url) => {
-  console.log(`getImageTags(${url})`);
+  console.log(`google.getImageTags(${url})`);
 
   const client_email = process.env.GOOGLE_CLIENT_EMAIL;
   const private_key = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
@@ -27,13 +27,13 @@ const getImageTags = async (url) => {
     .then(([result]) => result.labelAnnotations)
     .then((tags) => new GoogleImageTags({ url: url, tags: tags }).save())
     .catch((error) => {
-      console.log(`getGoogleTags(${url}) failed:\n${error}`);
+      console.log(`google.getGoogleTags(${url}) failed:\n${error}`);
       throw error;
     });
 };
 
 const getRestaurantImages = async (googleRestaurant) => {
-  console.log(`getRestaurantImages(${googleRestaurant})`);
+  console.log(`google.getRestaurantImages(${googleRestaurant})`);
 
   return googleRestaurant.photos.map(
     (googlePhoto) =>
@@ -42,7 +42,7 @@ const getRestaurantImages = async (googleRestaurant) => {
 };
 
 const getRestaurants = async (zip) => {
-  console.log(`getRestaurants(${zip})`);
+  console.log(`google.getRestaurants(${zip})`);
 
   const { latitude, longitude } = usZips[zip];
   const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude}%2C${longitude}&radius=1500&type=restaurant&key=${API_KEY}`;
@@ -58,7 +58,7 @@ const getRestaurants = async (zip) => {
       );
     })
     .catch((error) => {
-      console.log(`getRestaurants(${zip}) failed:\n${error}`);
+      console.log(`google.getRestaurants(${zip}) failed:\n${error}`);
       throw error;
     });
 };

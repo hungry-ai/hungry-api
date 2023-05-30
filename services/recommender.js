@@ -16,7 +16,7 @@ let DEFAULT_USER_WEIGHTS = new DefaultUserWeights({
 let D = DEFAULT_USER_WEIGHTS.weights.length;
 
 const loadConfig = async () => {
-  console.log(`loadConfig()`);
+  console.log(`recommender.loadConfig()`);
 
   DefaultUserWeights.findOne()
     .then((weights) => {
@@ -26,13 +26,13 @@ const loadConfig = async () => {
       }
     })
     .catch((error) => {
-      console.log(`could not load default user weights:\n${error}`);
+      console.log(`recommender.loadConfig() failed:\n${error}`);
       throw error;
     });
 };
 
 const getDefaultUserWeights = async () => {
-  console.log(`getDefaultUserWeights()`);
+  console.log(`recommender.getDefaultUserWeights()`);
 
   return {
     weights: DEFAULT_USER_WEIGHTS.weights.map(parseFloat),
@@ -43,7 +43,7 @@ const getDefaultUserWeights = async () => {
 };
 
 const getTagWeights = async (googleTag) => {
-  console.log(`getTagWeights(${googleTag})`);
+  console.log(`recommender.getTagWeights(${googleTag})`);
 
   // TODO: delete
   return Array.from({ length: D }, () => 420);
@@ -51,13 +51,13 @@ const getTagWeights = async (googleTag) => {
   return Tag.findOne({ name: googleTag.description })
     .then((tag) => (tag ? tag.weights : []))
     .catch((error) => {
-      console.log(`getTagWeights(${googleTag}) failed:\n${error}`);
+      console.log(`recommender.getTagWeights(${googleTag}) failed:\n${error}`);
       throw error;
     });
 };
 
 const getImageWeights = async (url) => {
-  console.log(`getImageWeights(${url})`);
+  console.log(`recommender.getImageWeights(${url})`);
 
   return google
     .getImageTags(url)
@@ -89,13 +89,13 @@ const getImageWeights = async (url) => {
         : Array.from({ length: D }, () => 0);
     })
     .catch((error) => {
-      console.log(`getImageWeights(${url}) failed:\n${error}`);
+      console.log(`recommender.getImageWeights(${url}) failed:\n${error}`);
       throw error;
     });
 };
 
 const addReview = async (review) => {
-  console.log(`addReview(${review})`);
+  console.log(`recommender.addReview(${review})`);
 
   const imageWeights = review.image.weights.map(parseFloat);
 
@@ -110,13 +110,15 @@ const addReview = async (review) => {
   review.user.weights.stale = true;
 
   return review.save().catch((error) => {
-    console.log(`addReview(${review}) failed:\n${error}`);
+    console.log(`recommender.addReview(${review}) failed:\n${error}`);
     throw error;
   });
 };
 
 const getImagePrediction = async (imageWeights, userWeights) => {
-  console.log(`getImagePrediction(${imageWeights}, ${userWeights})`);
+  console.log(
+    `recommender.getImagePrediction(${imageWeights}, ${userWeights})`
+  );
 
   // TODO: this is a big hack
   let isDefault = userWeights.length === DEFAULT_USER_WEIGHTS.weights.length;
@@ -130,7 +132,9 @@ const getImagePrediction = async (imageWeights, userWeights) => {
 };
 
 const getRestaurantPrediction = async (userWeights, restaurant) => {
-  console.log(`getRestaurantPrediction(${userWeights}, ${restaurant})`);
+  console.log(
+    `recommender.getRestaurantPrediction(${userWeights}, ${restaurant})`
+  );
 
   return Promise.all(
     restaurant.images.map((image) =>
@@ -143,13 +147,15 @@ const getRestaurantPrediction = async (userWeights, restaurant) => {
         : 0
     )
     .catch((error) => {
-      console.log(`getRestaurantPrediction(${userWeights}, ${restaurant})`);
+      console.log(
+        `recommender.getRestaurantPrediction(${userWeights}, ${restaurant})`
+      );
       throw error;
     });
 };
 
 const getUserWeights = async (user) => {
-  console.log(`getUserWeights(${user})`);
+  console.log(`recommender.getUserWeights(${user})`);
 
   if (!user.weights.stale) return user.weights.weights.map(parseFloat);
 
@@ -170,17 +176,17 @@ const getUserWeights = async (user) => {
       .save()
       .then(() => x)
       .catch((error) => {
-        console.log(`getUserWeights(${user}) failed:\n${error}`);
+        console.log(`recommender.getUserWeights(${user}) failed:\n${error}`);
         throw error;
       });
   } catch (error) {
-    console.log(`getUserWeights(${user}) failed:\n${error}`);
+    console.log(`recommender.getUserWeights(${user}) failed:\n${error}`);
     throw error;
   }
 };
 
 const getRecommendations = async (user, restaurants) => {
-  console.log(`getRecommendations(${user}, ${restaurants})`);
+  console.log(`recommender.getRecommendations(${user}, ${restaurants})`);
 
   return getUserWeights(user)
     .then((userWeights) =>
@@ -199,7 +205,7 @@ const getRecommendations = async (user, restaurants) => {
     })
     .catch((error) => {
       console.log(
-        `getRecommendations(${user}, ${restaurants}) failed:\n${error}`
+        `recommender.getRecommendations(${user}, ${restaurants}) failed:\n${error}`
       );
       throw error;
     });
