@@ -37,6 +37,8 @@ const getImageTags = async (url) => {
 const getRestaurantImages = async (googleRestaurant) => {
   console.log(`google.getRestaurantImages(${googleRestaurant})`);
 
+  console.log(`googleRestaurant.photos: ${googleRestaurant.photos}`);
+
   return googleRestaurant.photos.map(
     (googlePhoto) =>
       `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${googlePhoto.photo_reference}&key=${API_KEY}`
