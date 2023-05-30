@@ -96,8 +96,6 @@ const getImageWeights = async (url) => {
 const addReview = async (review) => {
   console.log(`addReview(${review})`);
 
-  const d = await D;
-
   review.user.weights.XTX_flat = review.user.weights.XTX_flat.map(
     (x, i) =>
       x +
@@ -118,6 +116,12 @@ const addReview = async (review) => {
 
 const getImagePrediction = async (imageWeights, userWeights) => {
   console.log(`getImagePrediction(${imageWeights}, ${userWeights})`);
+
+  // TODO: this is a big hack
+  let isDefault = userWeights.length === DEFAULT_USER_WEIGHTS.weights.length;
+  for (var i = 0; i < userWeights.length; ++i)
+    isDefault &= userWeights[i] === DEFAULT_USER_WEIGHTS.weights[i];
+  if (isDefault) return 3;
 
   return imageWeights
     .map((x, i) => parseFloat(x) * userWeights[i])
