@@ -150,6 +150,7 @@ const getAllStoriesByRating = async (rating) => {
         ACCESS_TOKENS[rating - 1]
     )
     .then(parseStories)
+    .then((stories) => stories.map((story) => ({ ...story, rating: rating })))
     .catch((error) => {
       console.log(`getAllStoriesByRating(${rating}) failed:\n${error}`);
       throw error;
