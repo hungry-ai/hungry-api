@@ -5,6 +5,8 @@ const restaurantSchema = new Schema(
   {
     name: String,
     images: [{ type: Schema.Types.ObjectId, ref: "Image" }],
+    zip: String,
+    googlePlaceId: String,
   },
   { timestamps: true }
 );
@@ -86,7 +88,6 @@ const placeReviewSchema = new Schema({
 
 const googleRestaurantSchema = new Schema(
   {
-    zip: String,
     address_components: [addressComponentSchema],
     adr_address: String,
     business_status: String,

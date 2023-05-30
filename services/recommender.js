@@ -1,60 +1,56 @@
+const { Matrix } = require("ml-matrix");
+
+const { DefaultUserWeights } = require("../models/User");
+const { Tag } = require("../models/Tag");
+
 const google = require("./google");
 
-const { Restaurant } = require("../models/Restaurant");
-const { User, DefaultUserWeights } = require("../models/User");
-const { Image } = require("../models/Image");
+const DEFAULT_USER_WEIGHTS = DefaultUserWeights.findOne()
+  .then((weights) =>
+    weights
+      ? weights
+      : new DefaultUserWeights({
+          weights: Array.from({ length: 10 }, () => 69),
+          XTX_flat: Array.from({ length: 10 * 10 }, () => 69),
+          XTy: Array.from({ length: 10 }, () => 69),
+          stale: false,
+        })
+  )
+  .catch((error) => {
+    console.log(`could not load DEFAULT_USER_WEIGHTS:\n${error}`);
+    throw error;
+  });
+
+const D = DEFAULT_USER_WEIGHTS.then((weights) => weights.weights.length).catch(
+  (error) => {
+    console.log(`could not load D:\n${error}`);
+    throw error;
+  }
+);
 
 const getDefaultUserWeights = async () => {
   console.log(`getDefaultUserWeights()`);
 
-  /*// TODO: remove, this was for testing
-  return new DefaultUserWeights({
-    weights: Array.from({ length: 20 }, (_, i) => i),
-    XTX_flat: Array.from({ length: 400 }, (_, i) => i),
-    XTy_flat: Array.from({ length: 20 }, (_, i) => i),
-    stale: false,
-  })
-    .save()
-    .then((weights) => ({
-      weights: weights.weights,
-      XTX_flat: weights.XTX_flat,
-      XTy_flat: weights.XTy_flat,
-      stale: weights.stale,
-    }))
-    .catch((error) => {
-      console.log(`getDefaultUserWeights() failed:\n${error}`);
-      throw error;
-    });*/
+  const weights = await DEFAULT_USER_WEIGHTS;
 
-  return DefaultUserWeights.findOne()
-    .then((weights) => ({
-      weights: weights.weights,
-      XTX_flat: weights.XTX_flat,
-      XTy_flat: weights.XTy_flat,
-      stale: weights.stale,
-    }))
-    .catch((error) => {
-      console.log(`getDefaultUserWeights() failed:\n${error}`);
-      throw error;
-    });
+  return {
+    weights: weights.weights.map(parseFloat),
+    XTX_flat: weights.XTX_flat.map(parseFloat),
+    XTy: weights.XTy.map(parseFloat),
+    stale: weights.stale,
+  };
 };
 
-const getOrAddUser = async (instagramId) => {
-  console.log(`getOrAddUser(${instagramId})`);
+const getTagWeights = async (googleTag) => {
+  console.log(`getTagWeights(${googleTag})`);
 
-  return User.findOne({ instagramId: instagramId })
-    .then((user) =>
-      user
-        ? user
-        : getDefaultUserWeights().then((weights) =>
-            new User({
-              instagramId: instagramId,
-              weights: weights,
-            }).save()
-          )
-    )
+  // TODO: delete
+  return D.then((d) => Array.from({ length: d }, () => 69));
+
+  return Tag.findOne({ name: googleTag.description })
+    .then((tag) => (tag ? tag.weights : []))
     .catch((error) => {
-      console.log(`getOrAddUser(${instagramId}) failed:\n${error}`);
+      console.log(`getTagWeights(${googleTag}) failed:\n${error}`);
       throw error;
     });
 };
@@ -62,39 +58,39 @@ const getOrAddUser = async (instagramId) => {
 const getImageWeights = async (url) => {
   console.log(`getImageWeights(${url})`);
 
+  const d = await D;
+
   return google
-    .getTags(url)
-    .then(([tags, weights]) =>
-      Array.from({ length: 20 }, (_, i) =>
-        tags
-          .map((tag, j) => tag.weights[i] * weights[j])
-          .reduce((x, y) => x + y, 0)
+    .getImageTags(url)
+    .then((googleImageTags) =>
+      Promise.all(
+        googleImageTags.tags.map((googleTag) =>
+          getTagWeights(googleTag).then((tagWeights) =>
+            tagWeights
+              ? [[tagWeights.map(parseFloat), parseFloat(googleTag.score)]]
+              : []
+          )
+        )
       )
     )
+    .then((tagWeights) => tagWeights.flat())
+    .then((tagWeights) => {
+      const totalWeight = tagWeights
+        .map(([_, weight]) => weight)
+        .reduce((x, y) => x + y, 0);
+
+      return totalWeight > 0
+        ? Array.from(
+            { length: d },
+            (_, i) =>
+              tagWeights
+                .map(([tag, weight]) => tag[i] * weight)
+                .reduce((x, y) => x + y, 0) / totalWeight
+          )
+        : Array.from({ length: d }, () => 0);
+    })
     .catch((error) => {
       console.log(`getImageWeights(${url}) failed:\n${error}`);
-      throw error;
-    });
-};
-
-const getOrAddImage = async (url) => {
-  console.log(`getOrAddImage(${url})`);
-
-  if (!url) {
-    console.log(`getOrAddImage(${url}) failed:\ninvalid argument`);
-    return;
-  }
-
-  return Image.findOne({ url: url })
-    .then((image) =>
-      image
-        ? image
-        : getImageWeights(url).then((weights) =>
-            new Image({ url: url, weights: weights }).save()
-          )
-    )
-    .catch((error) => {
-      console.log(`getOrAddImage(${url}) failed:\n${error}`);
       throw error;
     });
 };
@@ -102,25 +98,49 @@ const getOrAddImage = async (url) => {
 const addReview = async (review) => {
   console.log(`addReview(${review})`);
 
-  const userWeights = review.user.weights;
-  const imageWeights = review.image.weights.map(parseFloat);
-  const rating = review.rating;
+  const d = await D;
 
-  userWeights.XTX_flat = userWeights.XTX_flat.map(
+  review.user.weights.XTX_flat = review.user.weights.XTX_flat.map(
     (x, i) =>
-      parseFloat(x) +
-      rating * imageWeights[Math.floor(i / 20)] * imageWeights[i % 20]
+      x +
+      review.rating *
+        review.image.weights[Math.floor(i / d)] *
+        review.image.weights[i % d]
   );
-  userWeights.XTy_flat = userWeights.XTy_flat.map(
-    (y, i) => parseFloat(y) + rating * imageWeights[i]
+  review.user.weights.XTy = review.user.weights.XTy.map(
+    (y, i) => y + review.rating * review.image.weights[i]
   );
-  userWeights.stale = true;
+  review.user.weights.stale = true;
 
-  return review.user
-    .save()
-    .then(() => review)
+  return review.save().catch((error) => {
+    console.log(`addReview(${review}) failed:\n${error}`);
+    throw error;
+  });
+};
+
+const getImagePrediction = async (imageWeights, userWeights) => {
+  console.log(`getImagePrediction(${imageWeights}, ${userWeights})`);
+
+  return imageWeights
+    .map((x, i) => parseFloat(x) * userWeights[i])
+    .reduce((x, y) => x + y, 0);
+};
+
+const getRestaurantPrediction = async (userWeights, restaurant) => {
+  console.log(`getRestaurantPrediction(${userWeights}, ${restaurant})`);
+
+  return Promise.all(
+    restaurant.images.map((image) =>
+      getImagePrediction(image.weights, userWeights)
+    )
+  )
+    .then((imagePredictions) =>
+      imagePredictions.length > 0
+        ? imagePredictions.reduce((x, y) => x + y, 0) / imagePredictions.length
+        : 0
+    )
     .catch((error) => {
-      console.log(`addReview(${review}) failed:\n${error}`);
+      console.log(`getRestaurantPrediction(${userWeights}, ${restaurant})`);
       throw error;
     });
 };
@@ -128,114 +148,46 @@ const addReview = async (review) => {
 const getUserWeights = async (user) => {
   console.log(`getUserWeights(${user})`);
 
-  if (!user)
-    return getDefaultUserWeights()
-      .then((user) => user.weights)
-      .catch((error) => {
-        console.log(`getUserWeights(${user}) failed:\n${error}`);
-        throw error;
-      });
-
-  if (!user.stale) return user.weights.weights;
+  if (!user.weights.stale) return user.weights.weights.map(parseFloat);
 
   try {
-    const d = user.weights.XTy_flat.length;
+    const d = await D;
 
     const A = new Matrix(
       Array.from({ length: d }, (_, i) =>
-        user.weights.XTX_flat.slice(i * d, (i + 1) * d)
+        user.weights.XTX_flat.slice(i * d, (i + 1) * d).map(parseFloat)
       )
     );
-    const b = Matrix.columnVector(user.weights.XTy_flat);
+    const b = Matrix.columnVector(user.weights.XTy.map(parseFloat));
 
     const x = solve(A, b).to1DArray();
 
     user.weights.weights = x;
     user.weights.stale = false;
 
-    return user.weights.save().catch((error) => {
-      console.log(`getUserWeights(${user}) failed:\n${error}`);
-      throw error;
-    });
+    return user.weights
+      .save()
+      .then(() => x)
+      .catch((error) => {
+        console.log(`getUserWeights(${user}) failed:\n${error}`);
+        throw error;
+      });
   } catch (error) {
     console.log(`getUserWeights(${user}) failed:\n${error}`);
     throw error;
   }
 };
 
-const getPrediction = async (userWeights, image) => {
-  //console.log(`getPrediction(${userWeights}, ${image})`);
-
-  return userWeights
-    .map((u, i) => parseFloat(u) * parseFloat(image.weights[i]))
-    .reduce((x, y) => x + y, 0);
-};
-
-const addRestaurantPrediction = async (user, restaurant) => {
-  //console.log(`addRestaurantPrediction(${user}, ${restaurant})`);
+const getRecommendations = async (user, restaurants) => {
+  console.log(`getRecommendations(${user}, ${restaurants})`);
 
   return getUserWeights(user)
     .then((userWeights) =>
       Promise.all(
-        restaurant.images.map((image) => getPrediction(userWeights, image))
-      )
-    )
-    .then((predictions) =>
-      predictions && predictions.length
-        ? predictions.reduce((x, y) => x + y, 0) / predictions.length
-        : 0
-    )
-    .then((rating) => [rating, restaurant])
-    .catch((error) => {
-      console.log(
-        `addRestaurantPrediction(${user}, ${restaurant}) failed:\n${error}`
-      );
-      throw error;
-    });
-};
-
-const getRestaurant = async (googleRestaurant) => {
-  console.log(`getRestaurant(${googleRestaurant})`);
-
-  return Promise.all(
-    googleRestaurant.photos.map((photo) =>
-      getOrAddImage(google.getPhotoUrl(photo.photo_reference))
-    )
-  )
-    .then((images) =>
-      new Restaurant({
-        name: googleRestaurant.name,
-        images: images,
-      }).save()
-    )
-    .catch((error) => {
-      console.log(`getRestaurant(${googleRestaurant}) failed:\n${error}`);
-      throw error;
-    });
-};
-
-const getRestaurants = async (zip) => {
-  console.log(`getRestaurants(${zip})`);
-
-  return google
-    .getRestaurants(zip)
-    .then((googleRestaurants) =>
-      Promise.all(googleRestaurants.map(getRestaurant))
-    )
-    .catch((error) => {
-      console.log(`getRestaurants(${zip})`);
-      throw error;
-    });
-};
-
-const getRecommendations = async (user, zip) => {
-  console.log(`getRecommendations(${user}, ${zip})`);
-
-  return getRestaurants(zip)
-    .then((restaurants) =>
-      Promise.all(
         restaurants.map((restaurant) =>
-          addRestaurantPrediction(user, restaurant)
+          getRestaurantPrediction(userWeights, restaurant).then(
+            (prediction) => [prediction, restaurant]
+          )
         )
       )
     )
@@ -245,16 +197,16 @@ const getRecommendations = async (user, zip) => {
       return restaurantPredictions.map(([_, restaurant]) => restaurant);
     })
     .catch((error) => {
-      console.log(`getRecommendations(${user}, ${zip}) failed:\n${error}`);
+      console.log(
+        `getRecommendations(${user}, ${restaurants}) failed:\n${error}`
+      );
       throw error;
     });
 };
 
 module.exports = {
-  getDefaultUserWeights: getDefaultUserWeights,
-  getOrAddUser: getOrAddUser,
-  getImageWeights: getImageWeights,
-  getOrAddImage: getOrAddImage,
-  addReview: addReview,
-  getRecommendations: getRecommendations,
+  getDefaultUserWeights,
+  getImageWeights,
+  addReview,
+  getRecommendations,
 };

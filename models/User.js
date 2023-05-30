@@ -5,7 +5,7 @@ const userWeightsSchema = new Schema(
   {
     weights: [Schema.Types.Decimal128],
     XTX_flat: [Schema.Types.Decimal128],
-    XTy_flat: [Schema.Types.Decimal128],
+    XTy: [Schema.Types.Decimal128],
     stale: { type: Boolean, default: true },
   },
   { timestamps: true }
