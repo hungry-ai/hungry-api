@@ -76,10 +76,6 @@ const storyMention = async (webhook) => {
   return webhook
     .save()
     .then(instagram.parseWebhook)
-    .then((stories) => {
-      console.log(stories);
-      return stories;
-    })
     .then((stories) => Promise.allSettled(stories.map(storyMentionSingle)))
     .catch((error) => {
       console.log(`storyMention(${webhook}) failed:\n${error}`);

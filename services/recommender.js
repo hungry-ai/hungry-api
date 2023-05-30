@@ -5,39 +5,39 @@ const { Tag } = require("../models/Tag");
 
 const google = require("./google");
 
-const DEFAULT_USER_WEIGHTS = DefaultUserWeights.findOne()
-  .then((weights) =>
-    weights
-      ? weights
-      : new DefaultUserWeights({
-          weights: Array.from({ length: 10 }, () => 69),
-          XTX_flat: Array.from({ length: 10 * 10 }, () => 69),
-          XTy: Array.from({ length: 10 }, () => 69),
-          stale: false,
-        })
-  )
-  .catch((error) => {
-    console.log(`could not load DEFAULT_USER_WEIGHTS:\n${error}`);
-    throw error;
-  });
+let DEFAULT_USER_WEIGHTS = new DefaultUserWeights({
+  weights: Array.from({ length: 10 }, () => 69),
+  XTX_flat: Array.from({ length: 10 * 10 }, () => 69),
+  XTy: Array.from({ length: 10 }, () => 69),
+  stale: false,
+});
 
-const D = DEFAULT_USER_WEIGHTS.then((weights) => weights.weights.length).catch(
-  (error) => {
-    console.log(`could not load D:\n${error}`);
-    throw error;
-  }
-);
+let D = DEFAULT_USER_WEIGHTS.weights.length;
+
+const loadConfig = async () => {
+  console.log(`loadConfig()`);
+
+  DefaultUserWeights.findOne()
+    .then((weights) => {
+      if (weights) {
+        DEFAULT_USER_WEIGHTS = weights;
+        D = weights.weights.length;
+      }
+    })
+    .catch((error) => {
+      console.log(`could not load default user weights:\n${error}`);
+      throw error;
+    });
+};
 
 const getDefaultUserWeights = async () => {
   console.log(`getDefaultUserWeights()`);
 
-  const weights = await DEFAULT_USER_WEIGHTS;
-
   return {
-    weights: weights.weights.map(parseFloat),
-    XTX_flat: weights.XTX_flat.map(parseFloat),
-    XTy: weights.XTy.map(parseFloat),
-    stale: weights.stale,
+    weights: DEFAULT_USER_WEIGHTS.weights.map(parseFloat),
+    XTX_flat: DEFAULT_USER_WEIGHTS.XTX_flat.map(parseFloat),
+    XTy: DEFAULT_USER_WEIGHTS.XTy.map(parseFloat),
+    stale: DEFAULT_USER_WEIGHTS.stale,
   };
 };
 
@@ -45,7 +45,7 @@ const getTagWeights = async (googleTag) => {
   console.log(`getTagWeights(${googleTag})`);
 
   // TODO: delete
-  return D.then((d) => Array.from({ length: d }, () => 69));
+  return Array.from({ length: D }, () => 69);
 
   return Tag.findOne({ name: googleTag.description })
     .then((tag) => (tag ? tag.weights : []))
@@ -57,8 +57,6 @@ const getTagWeights = async (googleTag) => {
 
 const getImageWeights = async (url) => {
   console.log(`getImageWeights(${url})`);
-
-  const d = await D;
 
   return google
     .getImageTags(url)
@@ -81,13 +79,13 @@ const getImageWeights = async (url) => {
 
       return totalWeight > 0
         ? Array.from(
-            { length: d },
+            { length: D },
             (_, i) =>
               tagWeights
                 .map(([tag, weight]) => tag[i] * weight)
                 .reduce((x, y) => x + y, 0) / totalWeight
           )
-        : Array.from({ length: d }, () => 0);
+        : Array.from({ length: D }, () => 0);
     })
     .catch((error) => {
       console.log(`getImageWeights(${url}) failed:\n${error}`);
@@ -151,11 +149,9 @@ const getUserWeights = async (user) => {
   if (!user.weights.stale) return user.weights.weights.map(parseFloat);
 
   try {
-    const d = await D;
-
     const A = new Matrix(
-      Array.from({ length: d }, (_, i) =>
-        user.weights.XTX_flat.slice(i * d, (i + 1) * d).map(parseFloat)
+      Array.from({ length: D }, (_, i) =>
+        user.weights.XTX_flat.slice(i * D, (i + 1) * D).map(parseFloat)
       )
     );
     const b = Matrix.columnVector(user.weights.XTy.map(parseFloat));
