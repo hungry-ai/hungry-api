@@ -6,8 +6,6 @@ const { InstagramWebhook } = require("../models/Webhook");
 const instagramRoutes = express.Router();
 
 instagramRoutes.route("/instagram/story-mention").get((req, res) => {
-  console.log(`attempting webhook`);
-
   // Parse the query params
   let mode = req.query["hub.mode"];
   let token = req.query["hub.verify_token"];
