@@ -35,7 +35,9 @@ const getImageTags = async (url) => {
 };
 
 const getRestaurantImages = async (googleRestaurant) => {
-  console.log(`google.getRestaurantImages(${googleRestaurant})`);
+  console.log(
+    `google.getRestaurantImages({name: ${googleRestaurant.name}, place_id: ${googleRestaurant.place_id}})`
+  );
 
   return googleRestaurant.photos.map(
     (googlePhoto) =>

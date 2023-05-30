@@ -104,7 +104,7 @@ const getReviews = async (username) => {
 };
 
 const addGoogleImages = async (googleImages) => {
-  console.log(`addGoogleImages(${googleImages})`);
+  console.log(`addGoogleImages([${googleImages.length} googleImages])`);
 
   return Promise.allSettled(
     googleImages.map((url) =>
@@ -123,7 +123,9 @@ const addGoogleImages = async (googleImages) => {
 };
 
 const addGoogleRestaurant = async (googleRestaurant, zip) => {
-  console.log(`addGoogleRestaurant(${googleRestaurant})`);
+  console.log(
+    `addGoogleRestaurant({name: ${googleRestaurant.name}, place_id: ${googleRestaurant.place_id}})`
+  );
 
   return google
     .getRestaurantImages(googleRestaurant)
@@ -137,13 +139,17 @@ const addGoogleRestaurant = async (googleRestaurant, zip) => {
       }).save()
     )
     .catch((error) => {
-      console.log(`addGoogleRestaurant(${googleRestaurant}) failed:\n${error}`);
+      console.log(
+        `addGoogleRestaurant({name: ${googleRestaurant.name}, place_id: ${googleRestaurant.place_id}}) failed:\n${error}`
+      );
       throw error;
     });
 };
 
 const addGoogleRestaurants = async (googleRestaurants, zip) => {
-  console.log(`addGoogleRestaurants(${googleRestaurants})`);
+  console.log(
+    `addGoogleRestaurants([${googleRestaurants.length} googleRestaurants])`
+  );
 
   return Promise.allSettled(
     googleRestaurants.map((googleRestaurant) =>
@@ -159,7 +165,7 @@ const addGoogleRestaurants = async (googleRestaurants, zip) => {
     )
     .catch((error) => {
       console.log(
-        `addGoogleRestaurants(${googleRestaurants}) failed:\n${error}`
+        `addGoogleRestaurants([${googleRestaurants.length} googleRestaurants]) failed:\n${error}`
       );
       throw error;
     });
