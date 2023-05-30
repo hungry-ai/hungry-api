@@ -5,6 +5,7 @@ const { Tag } = require("../models/Tag");
 
 const google = require("./google");
 
+// TODO: delete
 let DEFAULT_USER_WEIGHTS = new DefaultUserWeights({
   weights: Array.from({ length: 10 }, () => 69),
   XTX_flat: Array.from({ length: 10 * 10 }, () => 69),
@@ -45,7 +46,7 @@ const getTagWeights = async (googleTag) => {
   console.log(`getTagWeights(${googleTag})`);
 
   // TODO: delete
-  return Array.from({ length: D }, () => 69);
+  return Array.from({ length: D }, () => 420);
 
   return Tag.findOne({ name: googleTag.description })
     .then((tag) => (tag ? tag.weights : []))
@@ -96,15 +97,15 @@ const getImageWeights = async (url) => {
 const addReview = async (review) => {
   console.log(`addReview(${review})`);
 
+  const imageWeights = review.image.weights.map(parseFloat);
+
   review.user.weights.XTX_flat = review.user.weights.XTX_flat.map(
     (x, i) =>
-      x +
-      review.rating *
-        review.image.weights[Math.floor(i / D)] *
-        review.image.weights[i % D]
+      parseFloat(x) +
+      review.rating * imageWeights[Math.floor(i / D)] * imageWeights[i % D]
   );
   review.user.weights.XTy = review.user.weights.XTy.map(
-    (y, i) => y + review.rating * review.image.weights[i]
+    (y, i) => parseFloat(y) + review.rating * imageWeights[i]
   );
   review.user.weights.stale = true;
 
