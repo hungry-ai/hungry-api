@@ -170,7 +170,7 @@ const getRestaurants = async (zip) => {
 
   return Restaurant.find({ zip: zip })
     .then((restaurants) =>
-      restaurants
+      restaurants && Array.isArray(restaurants) && restaurants.length > 0
         ? restaurants
         : google
             .getRestaurants(zip)
