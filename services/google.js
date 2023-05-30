@@ -6,6 +6,8 @@ const usZips = require("us-zips");
 const { GoogleImageTags } = require("../models/Tag");
 const { GoogleRestaurant } = require("../models/Restaurant");
 
+const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+
 const getImageTags = async (url) => {
   console.log(`google.getImageTags(${url})`);
 
