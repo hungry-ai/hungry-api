@@ -156,7 +156,7 @@ const addGoogleRestaurants = async (googleRestaurants, zip) => {
       addGoogleRestaurant(googleRestaurant, zip)
     )
   )
-    .then(
+    .then((restaurantsSettled) =>
       restaurantsSettled.flatMap((restaurantSettled) =>
         restaurantSettled.status === "fulfilled"
           ? [restaurantSettled.value]
