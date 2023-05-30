@@ -201,6 +201,7 @@ const getRecommendations = async (user, restaurants) => {
 };
 
 module.exports = {
+  loadConfig,
   getDefaultUserWeights,
   getImageWeights,
   addReview,
