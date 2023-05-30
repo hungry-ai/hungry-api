@@ -100,8 +100,8 @@ const addReview = async (review) => {
     (x, i) =>
       x +
       review.rating *
-        review.image.weights[Math.floor(i / d)] *
-        review.image.weights[i % d]
+        review.image.weights[Math.floor(i / D)] *
+        review.image.weights[i % D]
   );
   review.user.weights.XTy = review.user.weights.XTy.map(
     (y, i) => y + review.rating * review.image.weights[i]
