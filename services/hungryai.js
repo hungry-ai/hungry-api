@@ -7,6 +7,8 @@ const recommender = require("./recommender");
 const instagram = require("./instagram");
 const google = require("./google");
 
+const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+
 const addUser = async (instagramId) => {
   console.log(`addUser(${instagramId})`);
 
