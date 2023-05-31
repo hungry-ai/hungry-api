@@ -136,6 +136,8 @@ const getRestaurantPrediction = async (userWeights, restaurant) => {
     `recommender.getRestaurantPrediction(${userWeights}, {name: ${restaurant.name}, place_id: ${restaurant.googlePlaceId}})`
   );
 
+  console.log(`!!! ${restaurant.name} ${restaurant.images}`);
+
   return Promise.all(
     restaurant.images.map((image) =>
       getImagePrediction(image.weights, userWeights)

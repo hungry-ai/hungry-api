@@ -179,6 +179,7 @@ const getRestaurants = async (zip) => {
   console.log(`getRestaurants(${zip})`);
 
   return Restaurant.find({ zip: zip })
+    .populate("images")
     .then((restaurants) =>
       restaurants && Array.isArray(restaurants) && restaurants.length > 0
         ? restaurants
