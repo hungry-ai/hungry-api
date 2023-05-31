@@ -133,7 +133,7 @@ const getImagePrediction = async (imageWeights, userWeights) => {
 
 const getRestaurantPrediction = async (userWeights, restaurant) => {
   console.log(
-    `recommender.getRestaurantPrediction(${userWeights}, ${restaurant})`
+    `recommender.getRestaurantPrediction(${userWeights}, {name: ${restaurant.name}, place_id: ${restaurant.googlePlaceId}})`
   );
 
   return Promise.all(
@@ -148,14 +148,16 @@ const getRestaurantPrediction = async (userWeights, restaurant) => {
     )
     .catch((error) => {
       console.log(
-        `recommender.getRestaurantPrediction(${userWeights}, ${restaurant})`
+        `recommender.getRestaurantPrediction(${userWeights}, {name: ${restaurant.name}, place_id: ${restaurant.googlePlaceId}}) failed:\n${error}`
       );
       throw error;
     });
 };
 
 const getUserWeights = async (user) => {
-  console.log(`recommender.getUserWeights(${user})`);
+  console.log(
+    `recommender.getUserWeights({instagramUsername: ${user.instagramUsername}})`
+  );
 
   if (!user) return DEFAULT_USER_WEIGHTS.weights;
 
@@ -178,18 +180,22 @@ const getUserWeights = async (user) => {
       .save()
       .then(() => x)
       .catch((error) => {
-        console.log(`recommender.getUserWeights(${user}) failed:\n${error}`);
+        console.log(
+          `recommender.getUserWeights({instagramUsername: ${user.instagramUsername}}) failed:\n${error}`
+        );
         throw error;
       });
   } catch (error) {
-    console.log(`recommender.getUserWeights(${user}) failed:\n${error}`);
+    console.log(
+      `recommender.getUserWeights({instagramUsername: ${user.instagramUsername}}) failed:\n${error}`
+    );
     throw error;
   }
 };
 
 const getRecommendations = async (user, restaurants) => {
   console.log(
-    `recommender.getRecommendations(${user}, [${restaurants.length} restaurants])`
+    `recommender.getRecommendations({instagramUsername: ${user.instagramUsername}}, [${restaurants.length} restaurants])`
   );
 
   return getUserWeights(user)
@@ -209,7 +215,7 @@ const getRecommendations = async (user, restaurants) => {
     })
     .catch((error) => {
       console.log(
-        `recommender.getRecommendations(${user}, [${restaurants.length} restaurants]) failed:\n${error}`
+        `recommender.getRecommendations({instagramUsername: ${user.instagramUsername}}, [${restaurants.length} restaurants]) failed:\n${error}`
       );
       throw error;
     });

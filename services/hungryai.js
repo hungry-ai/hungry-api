@@ -14,12 +14,14 @@ const addUser = async (instagramId) => {
 
   return instagram
     .getInstagramUsername(instagramId)
-    .then((instagramUsername) =>
-      new User({
-        instagramUsername: instagramUsername,
-        instagramId: instagramId,
-        weights: weights,
-      }).save()
+    .then(
+      (instagramUsername) =>
+        instagramUsername &&
+        new User({
+          instagramUsername: instagramUsername,
+          instagramId: instagramId,
+          weights: weights,
+        }).save()
     )
     .catch((error) => {
       console.log(`addUser(${instagramId}) failed:\n${error}`);
