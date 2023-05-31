@@ -157,6 +157,8 @@ const getRestaurantPrediction = async (userWeights, restaurant) => {
 const getUserWeights = async (user) => {
   console.log(`recommender.getUserWeights(${user})`);
 
+  if (!user) return DEFAULT_USER_WEIGHTS.weights;
+
   if (!user.weights.stale) return user.weights.weights.map(parseFloat);
 
   try {
@@ -186,7 +188,9 @@ const getUserWeights = async (user) => {
 };
 
 const getRecommendations = async (user, restaurants) => {
-  console.log(`recommender.getRecommendations(${user}, ${restaurants})`);
+  console.log(
+    `recommender.getRecommendations(${user}, [${restaurants.length} restaurants])`
+  );
 
   return getUserWeights(user)
     .then((userWeights) =>
@@ -205,7 +209,7 @@ const getRecommendations = async (user, restaurants) => {
     })
     .catch((error) => {
       console.log(
-        `recommender.getRecommendations(${user}, ${restaurants}) failed:\n${error}`
+        `recommender.getRecommendations(${user}, [${restaurants.length} restaurants]) failed:\n${error}`
       );
       throw error;
     });

@@ -99,12 +99,14 @@ const getInstagramUsernameByRating = async (id, rating) => {
 const getInstagramUsername = async (id) => {
   console.log(`instagram.getInstagramUsername(${id})`);
 
-  return Promise.any(
+  return Promise.all(
     Array.from({ length: 5 }, (_, i) => getInstagramUsernameByRating(id, i + 1))
-  ).catch((error) => {
-    console.log(`instagram.getInstagramUsername(${id}) failed:\n${error}`);
-    throw error;
-  });
+  )
+    .then((usernames) => usernames.filter(Boolean)[0])
+    .catch((error) => {
+      console.log(`instagram.getInstagramUsername(${id}) failed:\n${error}`);
+      throw error;
+    });
 };
 
 const parseStories = async (instagramStories) => {

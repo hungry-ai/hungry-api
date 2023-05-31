@@ -108,7 +108,9 @@ const addGoogleImages = async (googleImages) => {
 
   return Promise.allSettled(
     googleImages.map((url) =>
-      Image.find({ url: url }).then((image) => (image ? image : addImage(url)))
+      Image.findOne({ url: url }).then((image) =>
+        image ? image : addImage(url)
+      )
     )
   )
     .then((imagesSettled) =>
