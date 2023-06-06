@@ -25,8 +25,6 @@ const ACCESS_TOKENS = [
 ];
 
 const parseWebhook = async (webhook) => {
-  console.log(`instagram.parseWebhook(${webhook})`);
-
   return webhook && webhook.entry && Array.isArray(webhook.entry)
     ? webhook.entry.flatMap((entry) =>
         entry && entry.messaging && Array.isArray(entry.messaging)
@@ -64,8 +62,6 @@ const parseWebhook = async (webhook) => {
 };
 
 const getInstagramUsernameByRating = async (id, rating) => {
-  console.log(`instagram.getInstagramUsernameByRating(${id}, ${rating})`);
-
   return axios
     .get(
       "https://graph.facebook.com/v16.0/me/conversations?platform=instagram&fields=participants&access_token=" +
@@ -97,8 +93,6 @@ const getInstagramUsernameByRating = async (id, rating) => {
 };
 
 const getInstagramUsername = async (id) => {
-  console.log(`instagram.getInstagramUsername(${id})`);
-
   return Promise.all(
     Array.from({ length: 5 }, (_, i) => getInstagramUsernameByRating(id, i + 1))
   )
@@ -110,8 +104,6 @@ const getInstagramUsername = async (id) => {
 };
 
 const parseStories = async (instagramStories) => {
-  console.log(`instagram.parseStory(${instagramStories})`);
-
   return instagramStories &&
     instagramStories.data &&
     instagramStories.data.data &&
@@ -144,8 +136,6 @@ const parseStories = async (instagramStories) => {
 };
 
 const getAllStoriesByRating = async (rating) => {
-  console.log(`instagram.getAllStoriesByRating(${rating})`);
-
   return axios
     .get(
       "https://graph.facebook.com/v16.0/me/conversations?platform=instagram&fields=messages{story,created_time,from}&access_token=" +
@@ -162,8 +152,6 @@ const getAllStoriesByRating = async (rating) => {
 };
 
 const getAllStories = async () => {
-  console.log(`instagram.getAllStories()`);
-
   return Promise.all(
     Array.from({ length: 5 }, (_, i) => getAllStoriesByRating(i + 1))
   )
@@ -175,8 +163,6 @@ const getAllStories = async () => {
 };
 
 const getStories = async (username) => {
-  console.log(`instagram.getStories(${username})`);
-
   return getAllStories()
     .then((allStories) =>
       username

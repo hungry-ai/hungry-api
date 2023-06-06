@@ -8,8 +8,6 @@ const instagram = require("./instagram");
 const google = require("./google");
 
 const addUser = async (instagramId) => {
-  console.log(`addUser(${instagramId})`);
-
   const weights = await recommender.getDefaultUserWeights();
 
   return instagram
@@ -30,8 +28,6 @@ const addUser = async (instagramId) => {
 };
 
 const addImage = async (url) => {
-  console.log(`addImage(${url})`);
-
   return recommender
     .getImageWeights(url)
     .then((weights) =>
@@ -47,8 +43,6 @@ const addImage = async (url) => {
 };
 
 const storyMentionSingle = async (story) => {
-  console.log(`storyMentionSingle(${story})`);
-
   return Promise.all([
     User.findOne({ instagramId: story.instagramId }).then((user) =>
       user ? user : addUser(story.instagramId)
@@ -67,27 +61,25 @@ const storyMentionSingle = async (story) => {
     )
     .then(recommender.addReview)
     .catch((error) => {
-      console.log(`storyMentionSingle(${story}) failed:\n${error}`);
+      console.log(
+        `storyMentionSingle(instagramId=${story.instagramId}, url=${story.url}) failed:\n${error}`
+      );
       throw error;
     });
 };
 
 const storyMention = async (webhook) => {
-  console.log(`storyMention(${webhook})`);
-
   return webhook
     .save()
     .then(instagram.parseWebhook)
     .then((stories) => Promise.allSettled(stories.map(storyMentionSingle)))
     .catch((error) => {
-      console.log(`storyMention(${webhook}) failed:\n${error}`);
+      console.log(`storyMention(webhookId=${webhook.id}) failed:\n${error}`);
       throw error;
     });
 };
 
 const getStories = async (username) => {
-  console.log(`getStories(${username})`);
-
   return instagram.getStories(username).catch((error) => {
     console.log(`getStories(${username}) failed:\n${error}`);
     throw error;
@@ -95,8 +87,6 @@ const getStories = async (username) => {
 };
 
 const getReviews = async (username) => {
-  console.log(`getReviews(${username})`);
-
   return User.findOne({ instagramUsername: username })
     .then((user) => (user ? Review.find({ user: user }) : []))
     .catch((error) => {
@@ -106,8 +96,6 @@ const getReviews = async (username) => {
 };
 
 const addGoogleImages = async (googleImages) => {
-  console.log(`addGoogleImages([${googleImages.length} googleImages])`);
-
   return Promise.allSettled(
     googleImages.map((url) =>
       Image.findOne({ url: url }).then((image) =>
@@ -127,10 +115,6 @@ const addGoogleImages = async (googleImages) => {
 };
 
 const addGoogleRestaurant = async (googleRestaurant, zip) => {
-  console.log(
-    `addGoogleRestaurant({name: ${googleRestaurant.name}, place_id: ${googleRestaurant.place_id}})`
-  );
-
   return google
     .getRestaurantImages(googleRestaurant)
     .then(addGoogleImages)
@@ -151,10 +135,6 @@ const addGoogleRestaurant = async (googleRestaurant, zip) => {
 };
 
 const addGoogleRestaurants = async (googleRestaurants, zip) => {
-  console.log(
-    `addGoogleRestaurants([${googleRestaurants.length} googleRestaurants])`
-  );
-
   return Promise.allSettled(
     googleRestaurants.map((googleRestaurant) =>
       addGoogleRestaurant(googleRestaurant, zip)
@@ -176,8 +156,6 @@ const addGoogleRestaurants = async (googleRestaurants, zip) => {
 };
 
 const getRestaurants = async (zip) => {
-  console.log(`getRestaurants(${zip})`);
-
   return Restaurant.find({ zip: zip })
     .populate("images")
     .then((restaurants) =>
@@ -196,8 +174,6 @@ const getRestaurants = async (zip) => {
 };
 
 const getRecommendations = async (username, zip) => {
-  console.log(`getRecommendations(${username}, ${zip})`);
-
   return getRestaurants(zip)
     .then((restaurants) =>
       User.findOne({ instagramUsername: username }).then((user) =>

@@ -16,8 +16,6 @@ let DEFAULT_USER_WEIGHTS = new DefaultUserWeights({
 let D = DEFAULT_USER_WEIGHTS.weights.length;
 
 const loadConfig = async () => {
-  console.log(`recommender.loadConfig()`);
-
   DefaultUserWeights.findOne()
     .then((weights) => {
       if (weights) {
@@ -32,8 +30,6 @@ const loadConfig = async () => {
 };
 
 const getDefaultUserWeights = async () => {
-  console.log(`recommender.getDefaultUserWeights()`);
-
   return {
     weights: DEFAULT_USER_WEIGHTS.weights.map(parseFloat),
     XTX_flat: DEFAULT_USER_WEIGHTS.XTX_flat.map(parseFloat),
@@ -43,8 +39,6 @@ const getDefaultUserWeights = async () => {
 };
 
 const getTagWeights = async (googleTag) => {
-  console.log(`recommender.getTagWeights(${googleTag})`);
-
   // TODO: delete
   return Array.from({ length: D }, () => 420);
 
@@ -57,8 +51,6 @@ const getTagWeights = async (googleTag) => {
 };
 
 const getImageWeights = async (url) => {
-  console.log(`recommender.getImageWeights(${url})`);
-
   return google
     .getImageTags(url)
     .then((googleImageTags) =>
@@ -95,8 +87,6 @@ const getImageWeights = async (url) => {
 };
 
 const addReview = async (review) => {
-  console.log(`recommender.addReview(${review})`);
-
   const imageWeights = review.image.weights.map(parseFloat);
 
   review.user.weights.XTX_flat = review.user.weights.XTX_flat.map(
@@ -116,10 +106,6 @@ const addReview = async (review) => {
 };
 
 const getImagePrediction = async (imageWeights, userWeights) => {
-  console.log(
-    `recommender.getImagePrediction(${imageWeights}, ${userWeights})`
-  );
-
   // TODO: this is a big hack
   let isDefault = userWeights.length === DEFAULT_USER_WEIGHTS.weights.length;
   for (var i = 0; i < userWeights.length; ++i)
@@ -132,10 +118,6 @@ const getImagePrediction = async (imageWeights, userWeights) => {
 };
 
 const getRestaurantPrediction = async (userWeights, restaurant) => {
-  console.log(
-    `recommender.getRestaurantPrediction(${userWeights}, {name: ${restaurant.name}, place_id: ${restaurant.googlePlaceId}})`
-  );
-
   return Promise.all(
     restaurant.images.map((image) =>
       getImagePrediction(image.weights, userWeights)
@@ -155,10 +137,6 @@ const getRestaurantPrediction = async (userWeights, restaurant) => {
 };
 
 const getUserWeights = async (user) => {
-  console.log(
-    `recommender.getUserWeights({instagramUsername: ${user.instagramUsername}})`
-  );
-
   if (!user) return DEFAULT_USER_WEIGHTS.weights;
 
   if (!user.weights.stale) return user.weights.weights.map(parseFloat);
@@ -194,10 +172,6 @@ const getUserWeights = async (user) => {
 };
 
 const getRecommendations = async (user, restaurants) => {
-  console.log(
-    `recommender.getRecommendations({instagramUsername: ${user.instagramUsername}}, [${restaurants.length} restaurants])`
-  );
-
   return getUserWeights(user)
     .then((userWeights) =>
       Promise.all(
