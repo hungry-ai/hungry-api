@@ -152,20 +152,20 @@ You can use the Facebook [Graph API Explorer](https://developers.facebook.com/to
 
 Our recommender algorithm involves giving each user and image a vector of $d\approx20$ weights. To predict someone's rating of an image, just take the dot product of their weights:
 
-\[prediction(user, image)=\sum_{i=1}^{d}user.weights_i*image.weights_i\]
+$$prediction(user, image)=\sum_{i=1}^{d}user.weights_i*image.weights_i$$
 
 The weights of an image never change and are computed by the following algorithm. First, we ask Google for all the tags that the image matches. Then, each of these tags is associated with a $d$-dimensional vector that we have already trained in our database. Then the image's weights is just the average of all of those tag weights, weighted by how strongly that tag matches to the image:
 
-\[image.weights=\frac{\sum_{t\in tags}t.weights*pr\_match(t)}{\sum_{t\in tags}pr\_match(t)}\]
+$$image.weights=\frac{\sum_{t\in tags}t.weights*pr\_match(t)}{\sum_{t\in tags}pr\_match(t)}$$
 
 The user weights are the solution to a least squares equation and have the form
 
-\[user.weights=(X^\top X)^{-1}X^\top y\]
+$$user.weights=(X^\top X)^{-1}X^\top y$$
 
 Our implementation maintains each user's $X^\top X$ and $X^\top y$. If your user reviews a new image and gives it a rating, then your update is:
 
-\[X^\top X\to X^\top X+rating*image.weights*image.weights^\top\]
+$$X^\top X\to X^\top X+rating*image.weights\cdot image.weights^\top$$
 
-\[X^\top y\to X^\top y+rating*image.weights\]
+$$X^\top y\to X^\top y+rating*image.weights$$
 
 The final implementation detail is that since inverting a matrix is expensive, we use lazy computation to avoid having to re-invert each time. So $user.weights$ has a flag called `stale` which says whether or not you need to invert the matrix.
