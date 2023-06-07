@@ -45,12 +45,23 @@ const getRestaurants = async (zip) => {
 
   return axios
     .get(url)
-    .then((res) => {
+    .then(async (res) => {
       const { results } = res.data;
+
       return Promise.allSettled(
-        results.map((restaurant) =>
-          new GoogleRestaurant({ ...restaurant, zip: zip }).save()
-        )
+        results.map((restaurant) => {
+          const placeDetailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${restaurant.place_id}&fields=photo&key=${API_KEY}`;
+          
+          return axios.get(placeDetailsUrl)
+            .then((res) => {
+              const { result } = res.data;
+              const photos = result.photos || [];
+              // Limit to 10 photos. To remove limit, change to restaurant.photos = photos;
+              restaurant.photos = photos.slice(0, 10);
+
+              return new GoogleRestaurant({ ...restaurant, zip: zip }).save();
+            });
+        })
       );
     })
     .then((restaurantsSettled) =>
@@ -65,6 +76,8 @@ const getRestaurants = async (zip) => {
       throw error;
     });
 };
+
+
 
 module.exports = {
   getImageTags,
