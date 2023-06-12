@@ -1,40 +1,6 @@
 const { InstagramWebhook } = require("../models/Webhook");
 const instagram = require("../services/instagram");
-const mockInstagram = jest.mock("../services/instagram");
 
-{
-  /*}
-test("testing getStories", () => {
-  const testId = "graph.facebook.com/17841458780532665/stories";
-  const parsed = .getStories(testId);
-  const expectedJSON = {
-    data: [
-      {
-        id: "17861937508009798",
-      },
-      {
-        id: "17862253585030136",
-      },
-      {
-        id: "17856428680064034",
-      },
-      {
-        id: "17862537148046301",
-      },
-      {
-        id: "17852121721080875",
-      },
-      {
-        id: "17862694123018235",
-      },
-    ],
-  };
-  parsed.then((parsed) => {
-    expect(parsed).toStrictEqual(expectedJSON);
-  });
-});
-*/
-}
 test("testing instagram.parseWebhook", () => {
   const testWebHook = new InstagramWebhook({
     object: "instagram",

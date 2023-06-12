@@ -48,7 +48,7 @@ instagramRoutes.route("/instagram/stories").get((req, res) => {
   hungryai
     .getStories(username)
     .then((stories) => {
-      res.send({ stories: stories ? stories : [] });
+      res.send({ stories: stories });
     })
     .catch((error) => {
       console.log(`/instagram/stories username=${username} failed:\n${error}`);
@@ -64,7 +64,7 @@ instagramRoutes.route("/instagram/reviews").get((req, res) => {
   hungryai
     .getReviews(username)
     .then((reviews) => {
-      res.send({ reviews: reviews ? reviews : [] });
+      res.send({ reviews: reviews });
     })
     .catch((error) => {
       console.log(`/instagram/reviews username=${username} failed:\n${error}`);
@@ -78,9 +78,9 @@ instagramRoutes.route("/instagram/restaurants").get((req, res) => {
   console.log(`/instagram/restaurants username=${username} zip=${zip}`);
 
   hungryai
-    .getRestaurants(username, zip)
+    .getRecommendations(username, zip)
     .then((restaurants) => {
-      res.send({ restaurants: restaurants ? restaurants : [] });
+      res.send({ restaurants: restaurants });
     })
     .catch((error) => {
       console.log(

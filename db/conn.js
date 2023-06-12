@@ -6,4 +6,4 @@ const connect = async () =>
     console.log(`could not connect to mongo: ${error}`);
   });
 
-module.exports = { connect: connect };
+module.exports = { connect };

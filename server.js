@@ -12,7 +12,10 @@ app.use(require("./routes/instagram"));
 
 app.listen(port, () => {
   // perform a database connection when server starts
-  dbo.connect();
-  // dbo.connect().then(require("./tests").main); // TODO: remove
+  dbo.connect().then(require("./services/recommender").loadConfig);
+  /*dbo
+    .connect()
+    .then(require("./services/recommender").loadConfig)
+    .then(require("./tests").main); // TODO: remove*/
   console.log(`Server is running on port: ${port}`);
 });
