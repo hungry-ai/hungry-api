@@ -26,7 +26,7 @@ test("testing hungryai.getStories: ", () => {
       },
     ],
   };
-  parsed.then((parsed) => {
-    expect(parsed).toStrictEqual(expectedJSON);
+  parsed.then((x) => {
+    expect(x).toStrictEqual(expectedJSON);
   });
 });
